@@ -1,0 +1,81 @@
+## Effective Dimensionality 
+
+- using PCA
+- using effective rank: http://ieeexplore.ieee.org/abstract/document/7098875/
+- participation ratio can also be computed, but is less preferred
+
+### PCA 
+PCA procedure: 
+
+- convert triangle (t2) to a digonally symmetrical matrix 
+- perform PCA on this matrix 
+- plot the variance of the principal components
+
+```{r PCA effective dimesionality}
+# convert out triangle (t2) to a diagonally symmetrical matrix
+# learnt this from: https://stackoverflow.com/questions/33026183/r-make-symmetric-matrix-from-lower-diagonal
+# forceSymmetric functino: https://stat.ethz.ch/R-manual/R-devel/library/Matrix/html/forceSymmetric.html
+# print(t2)
+# t3 <- Matrix::forceSymmetric(t2,uplo="U") # U means upper part of triangle should be copied to lower, L means the reverse
+# print(t3)
+
+t3 <- covSM
+
+# look at variance of each column 
+apply(t3,2,var)
+
+# PCA 
+# based on: https://www.r-bloggers.com/computing-and-visualizing-pca-in-r/
+# they suggested to do a log transform, but we are dealing with a covariance matrix that should have the same "units". 
+
+t3.pca <- prcomp(t3,
+                 center = FALSE,
+                 scale. = FALSE)
+# print method
+print(t3.pca)
+
+# plot method
+plot(t3.pca, type = "l")
+
+# summary method
+summary(t3.pca)
+```
+
+### Effective Rank 
+
+Effective rank procedure: 
+
+- obtain covariance matrix 
+
+
+```{r effective rank} 
+library(entropy)
+# based on the paper: 
+# https://infoscience.epfl.ch/record/110188/files/RoyV07.pdf
+
+
+# singular value decomposition tutorial: 
+# https://www.r-bloggers.com/singular-value-decomposition-svd-tutorial-using-examples-in-r/
+
+
+# currently don't know how to generate covM, let's do that with correlation matrix in the mean time: 
+
+# covM <- t3 # note, currently this is correlation 
+eigenV <- eigen(covSM)$values 
+normEigenV <- eigenV / sum(eigenV) # "normalise" so they sum to 1 
+# we do this to interpret the N eigenvalues as a distribution of N integers
+plot(normEigenV)
+
+# now we compute Shannon entropy of the vector 
+
+# sEn <- entropy.plugin(normEigenV) # seems to give different results for some reason
+sEn <- -sum(normEigenV * log2(normEigenV))
+
+print(sEn)
+
+# Todo: compute this myself to check
+
+# finally, exp on that
+effectiveRank = exp(sEn)
+print(effectiveRank)
+```
