@@ -1,0 +1,841 @@
+---
+title: "The Mecp2 Project R Analysis"
+output:
+  pdf_document: default
+  html_notebook: default
+  html_document: default
+---
+
+[TOC]
+
+# To do 
+
+- PCA use covariance matrix instead of correlation matrix 
+- write code for effective rank
+
+# Set up
+
+- main package is `sjemea` for spike analysis 
+- and `ggplot2` for visualisation 
+
+```{r setup, echo=FALSE, warning=FALSE, message=FALSE}
+library(dplyr)
+library(GGally)
+# library(ggbiplot)
+library(ggplot2)
+library(plyr)
+library(rhdf5)
+library(stringr)
+
+library(sjemea)
+
+# source('remove_noisy.R')
+# source('layoutplot.R')
+
+options(scipen = 1, digits = 2)
+```
+
+# Get data 
+
+```{r specify file path}
+files = list.files(path = "/media/timothysit/phts2/The_Mecp2_Project/feature_extraction/R_analysis/mecp2_spikes/", full.names = TRUE)
+```
+
+
+I want to manually select the files I want to analyse and analyse all of them together. 
+```{r}
+
+```
+
+
+```{r four plot}
+# example
+# data.file <- system.file("examples", "P9_CTRL_MY1_1A.txt",
+# package = "sjemea")
+# s <-jay.read.spikes( data.file)
+# fourplot(s)
+
+# try this out in my data
+h <- h5.read.spikes("/media/timothysit/phts2/The_Mecp2_Project/feature_extraction/R_analysis/mecp2_spikes/UN_12_09_17-6A_DIV14.h5")
+fourplot(h)
+```
+# Burst analysis 
+
+## Max Interval Method 
+
+- Max Interval method for burst analysis is described by Neuroexplorer (NexTechnologies, 2012)
+- Will have a look into that soon
+
+```{r burst analysis}
+# Example
+data.file <- system.file("examples", "TC89_DIV15_A.nexTimestamps",
+package = "sjemea")
+s <- sanger.read.spikes(data.file)
+s$allb <- spikes.to.bursts.surprise(s)
+nbursts <- sapply(s$allb, nrow)
+plot(nbursts, xlab='Electrode number', ylab='Number of bursts',
+bty='n', las=1)
+
+# My try 
+# h <- h5.read.spikes("/media/timothysit/phts2/The Mecp2 Project/feature extraction/processed files (h5)/WT_23_02_12-4T_DIV35.h5")
+h$allb <- spikes.to.bursts.surprise(h)
+head(h$allb[[2]])
+nbursts <- sapply(h$allb, nrow)
+nbursts <- unlist(nbursts) # for some reason I got a list here, but not in the example. May have to do with read.spikes
+plot(nbursts, xlab='Electrode number', ylab='Number of bursts', bty='n', las=1) 
+plot(h, beg=100, end=200, show.bursts=TRUE, whichcells=1:5)
+```
+
+## Burst analysis heatmap 
+
+Just an experiment in data visualisation, no new anlaysis here. 
+
+```{r nburst heatmap}
+# this is for the old MEA files 
+"electrodeIndex = c(99, 7, 5, 2, 59, 56, 54, 99, 
+10, 9, 6, 1, 60, 55, 52, 51, 
+12, 11, 8, 3, 58, 53, 50, 49, 
+15, 14, 13, 4, 57, 48, 47, 46, 
+16, 17, 18, 27, 34, 43, 44, 45, 
+19, 20, 23, 28, 33, 38, 41, 42,
+21, 22, 25, 30, 31, 36, 39, 40, 
+99, 24, 26, 29, 32, 35, 37, 99)"
+
+electrodeIndex = c(99, 21, 31, 41, 51, 61, 71, 99,
+12, 22, 32, 42, 52, 62, 72, 82,
+13, 23, 33, 43, 53, 63, 73, 83,
+14, 24, 34, 44, 54, 64, 74, 84,
+15, 25, 35, 45, 55, 65, 75, 85,
+16, 26, 36, 46, 56, 66, 76, 86,
+17, 27, 37, 47, 57, 67, 77, 87,
+99, 28, 38, 48, 58, 68, 78, 99)
+
+
+# this is for new mecp2 recordings (starting from August 2017)
+
+# electrodeIndex = 
+
+burstMap = integer(length(electrodeIndex))
+
+nbursts[99] = 0 # num 99 electrodes do not exist, therefore no bursts from there 
+
+# I THINK NA means zero burst, but I will email Eglen about it. convert NA values to 0
+nbursts[is.na(nbursts)] <- 0
+
+####################################################
+# here I do the same but insteaed of number of bursts I get the number of spikes 
+
+spikeMap = integer(length(electrodeIndex))
+
+for(i in 1:length(electrodeIndex)){
+  spikeMap[i] <- length(h$spikes[[toString(electrodeIndex[i])]]) 
+  # double brackets is needed to acceses h$spikes vector/list for some reason, I will look up why later but for now it works 
+  if(electrodeIndex[i] == 99){
+    spikeMap[i] <- NA
+  }
+}
+
+dim(spikeMap) <- c(8, 8)
+spikeMap <- t(spikeMap)
+print('Spike map')
+print(spikeMap)
+
+
+for(i in 1:length(electrodeIndex)){
+  burstMap[i] <- nbursts[electrodeIndex[i]]
+}
+
+dim(burstMap) <- c(8, 8)
+burstMap <- t(burstMap)
+
+
+##############################################
+
+print(nbursts)
+print('This is what the heatmap should represent:')
+print(burstMap)
+
+# Heat map produced based on example here: 
+# http://blog.aicry.com/r-heat-maps-with-ggplot2/
+
+# Import packages
+library(ggplot2)  
+library(RColorBrewer)  
+library(reshape2)  
+library(viridis) # awe-inspiring color palette
+
+# due to how heatmap in general, we need to transpose and flip our marix (since axis are reversed) (ie. in our burstMap, we counted from the left hand upper corner, which we denote as (1, 1), but in the heatmap (1,1) will be located at the bottom left corner)
+map <- apply(t(burstMap), 1, rev) # flip the first axis (rows?)
+
+# spectral color pallette 
+myPalette <- colorRampPalette(rev(brewer.pal(11, "Spectral")), space="Lab")
+
+map.melted <- melt(t(map))
+print(map.melted)
+ggplot(map.melted, aes(x = Var1, y = Var2, fill = value)) + geom_tile() + 
+  coord_equal() + # to get square tiles
+ theme_bw() + theme(panel.border = element_blank()) + # remove borders and grids squares 
+theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank()) +  # remove grid lines
+theme(axis.text.x = element_blank(), axis.text.y = element_blank(), axis.ticks = element_blank()) +  # remove axis ticks
+theme(axis.title.x=element_blank(), axis.title.y=element_blank()) +  # remove axis names
+scale_fill_viridis(name="# Spikes", na.value="white") 
+# scale_fill_gradientn(colours = myPalette(100)) # spectral 
+# scale_fill_continuous(name = "Number of bursts") # change legend, default colour
+# geom_text(aes(label = electrodeIndex)) # electrode index, shall work on this later (need to transpose electrodeIndex and flip)
+
+# please manually check if heatmap matches burstMap
+
+```
+
+I will do the same thing for spike count. 
+Also have to think about how to do multifile analysis. 
+
+```{r spike count heatmap}
+
+electrodeIndex = c(99, 21, 31, 41, 51, 61, 71, 99,
+12, 22, 32, 42, 52, 62, 72, 82,
+13, 23, 33, 43, 53, 63, 73, 83,
+14, 24, 34, 44, 54, 64, 74, 84,
+15, 25, 35, 45, 55, 65, 75, 85,
+16, 26, 36, 46, 56, 66, 76, 86,
+17, 27, 37, 47, 57, 67, 77, 87,
+99, 28, 38, 48, 58, 68, 78, 99)
+
+
+
+
+```
+
+function for anlaysis so I can specify whether to do burst or do spikes 
+
+```{r}
+mapAnalyse <- function(s, electrodeMap, measure = 'burst'){
+  library(ggplot2)  
+  library(RColorBrewer)  
+  library(reshape2)  
+  library(viridis) # awe-inspiring color palette
+  
+  if(measure == 'burst'){
+    h$allb <- spikes.to.bursts.surprise(h)
+    nbursts <- sapply(h$allb, nrow)
+    nbursts <- unlist(nbursts) 
+    burstMap = integer(length(electrodeIndex))
+    nbursts[99] = NA # num 99 electrodes do not exist, therefore no bursts from there (corners of the MEA)
+    # I THINK NA means zero burst, but I will email Eglen about it. convert NA values to 0
+    nbursts[is.na(nbursts)] <- 0
+    for(i in 1:length(electrodeIndex)){
+        burstMap[i] <- nbursts[electrodeIndex[i]]
+    }
+
+    dim(burstMap) <- c(8, 8)
+    burstMap <- t(burstMap)
+    resultMap <- burstMap
+  }
+  if(measure == 'spikeCount'){
+   spikeMap = integer(length(electrodeIndex))
+  for(i in 1:length(electrodeIndex)){
+  spikeMap[i] <- length(h$spikes[[toString(electrodeIndex[i])]]) 
+  if(electrodeIndex[i] == 99){
+    spikeMap[i] <- 1 
+  }
+  # double brackets is needed to acceses h$spikes vector/list for some reason, I will look up why later but for now it works 
+  }
+  dim(spikeMap) <- c(8, 8)
+  spikeMap <- t(spikeMap)
+  resultMap <- log(spikeMap) # log scale 
+  }
+  
+  # now we put the matrix nicely into a heatmap 
+  
+  # spectral color pallette 
+  myPalette <- colorRampPalette(rev(brewer.pal(11, "Spectral")), space="Lab")
+  
+  # due to how heatmap in general, we need to transpose and flip our marix (since axis are reversed) (ie. in our burstMap, we counted from the left hand upper corner, which we    denote as (1, 1), but in the heatmap (1,1) will be located at the bottom left corner)
+  map <- apply(t(resultMap), 1, rev) # flip the first axis (rows?)
+  map.melted <- melt(t(map))
+  # print(map.melted) # in case you want to know the exact values 
+  # save jpeg 
+  # actual plot 
+  ggplot(map.melted, aes(x = Var1, y = Var2, fill = value)) + geom_tile()  + 
+  ggtitle(basename(s$file)) +  # set the title to the file name 
+  coord_equal() + # to get square tiles
+  theme_bw() + theme(panel.border = element_blank()) + # remove borders and grids squares   
+  theme(plot.title = element_text(hjust = 0.5)) + # center title, this must be placed below theme_bw()
+  # see https://stackoverflow.com/questions/45346885/center-plot-title-in-ggplot2-using-theme-bw
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank()) +  # remove grid lines
+  theme(axis.text.x = element_blank(), axis.text.y = element_blank(), axis.ticks = element_blank()) +  # remove axis ticks
+  theme(axis.title.x=element_blank(), axis.title.y=element_blank()) +  # remove axis names
+  # scale_fill_continuous(name = "Number of spikes") # change legend, default palette
+  # scale_fill_gradientn(colours = myPalette(100)) # spectral palette
+  # scale_fill_viridis(name="log(# Spikes)", na.value="gray") # perhaps better color palette
+  # scale_fill_gradientn(name="log(# Spikes)", na.value="gray", colours = viridis(256, option = "D")) 
+  scale_fill_gradientn(name="log(# Spikes)", na.value="gray", colours = c("white", viridis(256, option = "D")), values = c(0,0.5,1), limits = c(0, max(resultMap))) # use viridis but gradientn is easier for cotrolling other options
+  
+  # geom_text(aes(label = electrodeIndex)) # electrode index, shall work on this later (need to transpose electrodeIndex and flip)
+  fileName <- substr(basename(s$file), 1,  nchar(basename(s$file))-3) # remove last three characters, which are ".h5"
+  format <- ".png"
+  ggsave(paste(fileName, format, sep = '')) 
+}
+  
+```
+
+Now let's loop through all the files we have, create and save the heatmaps 
+
+not too sure how to do this, the simplest way is just to loop through every file in the directory. 
+But for some analysis, we want to compare WT vs KO, and in others we want to look at development over time. 
+
+```{r}
+library(tcltk)
+flist <- tk_choose.files()
+for(file in 1:length(flist)){
+  h <- h5.read.spikes(flist[file])
+  mapAnalyse(h, electrodeIndex, measure = "spikeCount")
+}
+```
+
+
+
+# Firing Regularity 
+
+## Fitting Gamma distribution to Interspike Intervals (ISI)
+
+- log(shape) < 1 : Firing in bursts 
+- log(shape) = 1 : Poisson distributed firing 
+- log(shape) > 1 : Firing with peak of ISI 
+
+```{r fitting Gamma distgribution to ISI}
+logshapes <- c()
+logrates <- c()
+for (i in 1:h$NCells) {
+gamma.estimate <- isi.gamma(h$spikes[[i]], chunk.length = 1500) 
+# somehow optimisation fail if chunk.length = 1000 or lower, need to see what this chunklength is about, can't find it with ?isi.gamma, but I think it is just the sampling rate; ie. average every 1000 samples, perhaps too many calculations when sampling rate is high.
+logshapes[i] <- gamma.estimate$logshape
+logrates[i] <- gamma.estimate$lograte
+}
+plot(logshapes, logrates)
+```
+## Log interspike intervals
+
+```{r log interspike intervals}
+isi <- unlist(unname(sapply(h$spikes, diff)))
+hist(log(isi))
+```
+
+
+## Inter-spike interval correlation 
+
+- note this is not in Eglen's code, but from a different package.
+
+```{r ISI correlation}
+library(STAR)
+# TODO: work out how to convert h$spikes to form that can be interepreted by this function
+acf.spikeTrain(unlist(h$spikes[1]), type = "covariance", plot = FALSE)
+```
+
+# Network spikes
+
+- Network spikes = periodic increase in electrical activity across the entire array (Eytan and Marom 2006)
+- Horizontal red line = minimum number of electrodes that needs to be "active" for the event to be considered a network spike
+- mean network spikes shows what a "typical" network spike looks in the recording (by averaging)
+
+```{r network spikes}
+h$ns <- compute.ns(h, ns.T=0.003, ns.N=10,sur=100)
+# ns.T is the bin width (seconds) for counting spikes
+# ns.N is the threshold number of active electrodes required to make network spike 
+# sur is the number of bins either side of peak to retain when computing mean network spike, not sure what this means 
+plot(h$ns, ylab='Count', xlab='Time (s)')
+# plot(h$ns, xlim=c(450, 500), xlab='Time (s)', ylab='Count')
+# plot(h$ns$mean, xlab='Time (s)', ylab='Count', main='Mean NS')
+```
+
+# Correlation Analysis  
+
+## Correlation index
+
+- included in the fourplot already
+
+```{r Correlation index}
+plot.corr.index(h)
+
+# based on http://www.sciencedirect.com/science/article/pii/0896627393901228?via%3Dihub
+# written by Eglen
+
+```
+
+## Tiling based measure of correlation 
+
+- note the term "tiling" has nothing to do with this being presented by a heatmap 
+- This measure can be used in the fourplot instead of the "traditional" one
+
+```{r tiling based correlation}
+t2 <- tiling.allpairwise(h)
+require(lattice)
+lattice.options(default.theme = standard.theme(color = FALSE))
+levelplot(t2)
+
+# note that in R (unlike in python Seaborn), heatmap and lattice plots begin from the left lower corner (even though when you print out your matrix, this will correspond to the upper left corner of your matrix)
+```
+
+## Covariance matrix 
+
+```{r covariance matrix}
+# I will use the spike count within a time range to get the covariance 
+
+# first we need to obtain the spike count matrix
+
+# define start and end time of recording in seconds
+startRecord = 0
+endRecord = 12 * 60 
+bin = 0.1
+# let's try to count every 0.1s, since Wong et al used +/- 0.05s 
+spikeCount = matrix(0, endRecord / bin, dim(h$spikes))  
+
+# got the counting thing from 
+# https://stackoverflow.com/questions/19528926/r-counting-elements-in-a-vector-within-a-certain-range-as-a-sliding-window
+
+for (electrode in 1:dim(h$spikes)){
+  vv = unlist(h$spikes[electrode])
+  spikeCount[1:(endRecord/bin), electrode]  = table(cut(vv,seq(startRecord,endRecord,bin),include.lowest = TRUE))
+}
+
+# we then compute covariance matrix of the spike count matrix
+
+covM = cov(spikeCount)
+
+# 'hand calculation' of covariance matrix just to be sure
+# electrodeA = 1 
+# electrodeB = 2
+# meanA = mean(spikeCount[, electrodeA])
+# meanB = mean(spikeCount[, electrodeB])
+# covariance = sum( (spikeCount[, electrodeA] - meanA) * (spikeCount[, electrodeB] - meanB) / (endRecord/bin))
+# yup, checks out. 
+
+# variance stabilisation operation
+# for spike count data, divide the count by the square root of the mean count, this way the diagonal of the covariance matrix is made of Fano factors, a better measure of variability that is less sensitive to the mean count
+
+stabilisedCount =  t( t(spikeCount) / colMeans(spikeCount) ) # divide each column of spikeCount (of each electrode) by the squareroot of the mean of that column 
+# the messy transpose is due to how R deals with division, use a test matrix to check it is working in the way you want. 
+# a <- cbind(c(1, 2, 3), c(4, 5, 6), c(7, 8, 9))
+# b <- c(1, 2, 3)
+# t( t(a) / b)
+
+
+# stabilisedCount = spikeCount / sqrt(mean(spikeCount)) # divide by mean count of all electrodes
+covSM = cov(stabilisedCount) # S for stabilised
+
+
+```
+
+covariance of spike count as a function 
+
+```{r spike count covariance function}
+
+getCov <- function(s, startRecord = 0, endRecord = 12 * 60, bin = 0.1){
+  # let's try to count every "bin" secnods, since Wong et al used +/- 0.05s 
+  spikeCount = matrix(0, endRecord / bin, dim(s$spikes))  
+  # got the counting thing from 
+  # https://stackoverflow.com/questions/19528926/r-counting-elements-in-a-vector-within-a-certain-range-as-a-sliding-window
+  for (electrode in 1:dim(s$spikes)){
+    vv = unlist(s$spikes[electrode])
+    spikeCount[1:(endRecord/bin), electrode]  = table(cut(vv,seq(startRecord,endRecord,bin),include.lowest = TRUE))
+    covM = cov(spikeCount)
+  } 
+  covM = cov(spikeCount)
+  stabilisedCount =  t( t(spikeCount) / colMeans(spikeCount) )  # divide each column of spikeCount (of each electrode) by the squareroot of the mean of that column 
+  covSM = cov(stabilisedCount) # S is for stabilised
+}
+
+```
+
+
+## Effective Dimensionality 
+
+- using PCA
+- using effective rank: http://ieeexplore.ieee.org/abstract/document/7098875/
+- participation ratio can also be computed, but is less preferred
+
+### PCA 
+PCA procedure: 
+
+- convert triangle (t2) to a digonally symmetrical matrix 
+- perform PCA on this matrix 
+- plot the variance of the principal components
+
+```{r PCA effective dimesionality}
+# convert out triangle (t2) to a diagonally symmetrical matrix
+# learnt this from: https://stackoverflow.com/questions/33026183/r-make-symmetric-matrix-from-lower-diagonal
+# forceSymmetric functino: https://stat.ethz.ch/R-manual/R-devel/library/Matrix/html/forceSymmetric.html
+# print(t2)
+# t3 <- Matrix::forceSymmetric(t2,uplo="U") # U means upper part of triangle should be copied to lower, L means the reverse
+# print(t3)
+
+t3 <- covSM
+
+# look at variance of each column 
+apply(t3,2,var)
+
+# PCA 
+# based on: https://www.r-bloggers.com/computing-and-visualizing-pca-in-r/
+# they suggested to do a log transform, but we are dealing with a covariance matrix that should have the same "units". 
+
+t3.pca <- prcomp(t3,
+                 center = FALSE,
+                 scale. = FALSE)
+# print method
+print(t3.pca)
+
+# plot method
+plot(t3.pca, type = "l")
+
+# summary method
+summary(t3.pca)
+```
+
+### Effective Rank 
+
+Effective rank procedure: 
+
+- obtain covariance matrix 
+
+
+```{r effective rank} 
+library(entropy)
+# based on the paper: 
+# https://infoscience.epfl.ch/record/110188/files/RoyV07.pdf
+
+
+# singular value decomposition tutorial: 
+# https://www.r-bloggers.com/singular-value-decomposition-svd-tutorial-using-examples-in-r/
+
+
+# currently don't know how to generate covM, let's do that with correlation matrix in the mean time: 
+
+# covM <- t3 # note, currently this is correlation 
+eigenV <- eigen(covSM)$values 
+normEigenV <- eigenV / sum(eigenV) # "normalise" so they sum to 1 
+# we do this to interpret the N eigenvalues as a distribution of N integers
+plot(normEigenV)
+
+# now we compute Shannon entropy of the vector 
+
+# sEn <- entropy.plugin(normEigenV) # seems to give different results for some reason
+sEn <- -sum(normEigenV * log2(normEigenV))
+
+print(sEn)
+
+# Todo: compute this myself to check
+
+# finally, exp on that
+effectiveRank = exp(sEn)
+
+print(effectiveRank)
+```
+
+```{r effective rank function}
+# takes in covariance matrix (eg. number of spikes in each electrode), computes effective rank
+effRank <- function(covM, plot = FALSE){
+  eigenV <- eigen(covSM)$values 
+  normEigenV <- eigenV / sum(eigenV)
+  sEn <- -sum(normEigenV * log2(normEigenV))
+  if(plot == TRUE){
+    plot(normEigenV)
+  }
+  effectiveRank = exp(sEn)
+}
+
+```
+
+
+
+```{r temporal mean vs variance}
+
+# meanSpike <- mean(spikeCount)
+meanSpike <- apply(spikeCount, 2, mean)
+varSpike <- apply(spikeCount, 2, var) 
+
+plot(sqrt(varSpike), meanSpike)
+
+```
+
+
+Plot effective rank across time 
+
+```{r}
+# get the files 
+library(tcltk)
+flist <- tk_choose.files()
+# use efective rank function to obtain value and store in vector 
+effRankStore <- c()
+for(file in 1:length(flist)){
+  h <- h5.read.spikes(flist[file])
+  covSM <- getCov(h) # get covariance matrix 
+  effRankStore[file] <- effRank(covSM) # append effective rank to store
+}
+
+print(effRankStore)
+
+# create a data structure to store all this 
+
+# preferably, it will be able to read out whether it is WT / KO 
+# then get the DIV date 
+# then get the name as well, but this is less important 
+
+
+
+# plot them 
+
+plot(effRankStore)
+
+# Compare betwen WT and KO
+
+
+```
+
+
+
+# Feature Extraction 
+
+Features used in the Charlesworth paper 
+
+1. CV of IBI (covariance? of inter-burst interval?)
+2. Theta burst 
+3. Mean correlation 
+4. Burst duration 
+5. Burst rate 
+6. percentage of spikes in bursts 
+7. Firing rate 
+8. NS peak (network spike)
+9. Network spike duration 
+10. Within-burst firing rate 
+11. NS rate 
+
+
+Feature matrix ready: 
+
+- [] CV of IBI 
+- [x] Theta Burst
+- [] mean correlation 
+- [] Burst duration 
+
+
+
+Other featuers within Eglen's code capability that we can use: 
+
+- firing regularity 
+
+Some featuers that I am thinking of creating: 
+
+- burst distribution (eg. quantify how even / localised the bursts are)
+- (can we treat the array heatmap etc.as an image and run a CNN through it? and decide which grid is the most important grid in classification etc...)
+- for mean correlation, we can try out both the "default" way (not too sure on what is the logic of this method), and the tiling based measure 
+
+## Feature matrix creation 
+
+### Preprocessing of h5 file 
+
+```{r preprocessing}
+
+#Function to read in data for all arrays of a specific age and region
+ spikes<-function(age1, region1, file.df) {
+   file.subset<-subset(file.df, age==age1 & region==region1)[,"file"]
+   file.strings<-sapply(file.subset, toString)
+   s.list<-lapply(file.strings, h5.read.spikes)
+ }
+
+```
+
+### Theta Bursting
+
+```{r Theta burst}
+# feature extraction code in Charlesworth paper 
+# https://github.com/sje30/g2chvc/blob/master/R/analysis_functions.R
+
+#Function to calculate theta bursting. Input is vector of spike times from one electrode, output is TRUE if
+#theta bursting is occuring at this electrode, otherwise false
+smooth.isi.elec<-function(s) {
+  allisi <- diff(unlist(s))
+  x <- allisi
+  if (length(x)>1) {
+    den <- density(log(x))
+    den$x <- exp(den$x)
+    p <- peaks(den$y)
+    pks<-which(p)
+    theta.reg<-which(den$x<=(1/4) & den$x>=(1/10))
+    ret<-sum(intersect(pks, theta.reg))>0 
+  }else{
+    ret<-FALSE
+  }
+  ret
+}
+
+#Calculates fraction of electrodes theta bursting on any array. Input is list of spike trains from one array,
+#output is number representing fraction of theta bursting on that array
+tburst.elec<-function(s){
+  spks<-s$spikes
+  t.burst<-lapply(spks, smooth.isi.elec)
+  theta.frac<- sum(unlist(t.burst))/length(t.burst)
+}
+
+print(tburst.elec(h))
+```
+
+
+### Burst statistics 
+
+```{r burst statistics}
+#Function to calculate burst statistics
+#Input is list of spike trains, ouput is data frame of burst statistics
+burst.analysis <- function(s.list) {
+  b.list<- lapply(s.list, function(x) spikes.to.bursts(x, "mi"))
+  for (j in 1:length(s.list)) {
+    s.list[[j]]$allb <- b.list[[j]]
+  }
+  bsum.list<-lapply(s.list, calc.burst.summary)
+  stat.sum<-burst.stats(bsum.list)
+  stat.sum
+}
+
+#Calculates median bursts per minute, burst duration, percent of spikes in bursts and 
+#CV of IBI from burst summary list
+burst.stats<-function(bsum.list){
+  bursts.pm<-sapply(sapply(bsum.list, "[[", 6), function(x) median(x[!x==0]))
+  burst.dur <- sapply(sapply(bsum.list, "[[", 8), function(x) median(x[!x==0]))
+  s.in.b<- sapply(sapply(bsum.list, "[[", 12), function(x) median(x[!x==0], na.rm=TRUE))
+  cv.IBI <- sapply(sapply(bsum.list, "[[", 19), function(x) median(x[!x==0], na.rm=TRUE))
+  stat.sum<-data.frame(bursts.pm=bursts.pm, burst.dur=burst.dur, s.in.b=s.in.b, cv.IBI=cv.IBI)
+}
+```
+
+### Network spikes 
+
+```{r network spike statistics}
+#Function to calculate network spikes statistics
+#Input is list of spikes, output is data frame containing median peak value and duration of network spikes
+network.spikes <- function(s.list) {
+  n.list<-lapply(s.list, function(x) compute.ns(x, ns.T=0.003, ns.N=10, sur=100))
+  ns.stat.sum<-NULL
+  for (j in 1:length(n.list)) {
+    if (is.null(n.list[[j]]$measures)==0) {
+      ns.meds<- apply(n.list[[j]]$measures, 2, median)[3:4]
+      rec.durn <- (s.list[[j]]$rec.time[2] - s.list[[j]]$rec.time[1])/60
+      ns.all.stat<-data.frame(ns.rate=n.list[[j]]$brief[1]/rec.durn, peak.val=ns.meds[1], durn=ns.meds[2])
+    } else {
+      ns.all.stat<-data.frame(ns.rate=0, peak.val=NA, durn=NA)
+    }
+    ns.stat.sum <- rbind(ns.stat.sum, ns.all.stat)
+  }
+  rownames(ns.stat.sum) =NULL
+  ns.stat.sum
+}
+
+# need to sort out how to get s.list
+
+```
+
+# Storing them features 
+
+My approach is the following: 
+
+- load file, do the processing (I am assuming the "features" will all be as variables in the workspace)
+- save them in a R object
+
+list of features to save: 
+
+- eigenvalues and eigenvectors (vector) 
+- effective rank (integer)
+- number of bursts? 
+- spike rate 
+- regularity (not sure if we have that)
+
+
+I will also generate a heatmap of the spike counts for each of the file. (Not sure to what extent this will be useful for our machine learning method)
+The spike counts will be stored as a vector in the R object
+Ideally I want each R object to contain multiple "dates", ie. one R object represent one MEA. But I am not too sure how to do this non-manually. 
+And even doing it manually will require some very manual coding. 
+
+The ideal thing to do is make this into one large function with the file name as input and with the features as output. 
+
+```{r saving features}
+
+```
+
+# Look at single MEA over development 
+
+## Find files we want to analyse
+
+```{r development}
+
+# select the files you want to analyse
+
+```
+
+
+
+# Just for fun: Networks, using covariance matrix 
+
+```{r load libraries}
+library(igraph)
+library(network)
+library(sna)
+library(visNetwork)
+library(ndtv)
+library(threejs)
+library(networkD3)
+library(ggplot2)
+library(GGally)
+```
+
+Now we make a grid 
+
+```{r}
+net.bg <- sample_pa(64)
+V(net.bg)$size <- 8
+V(net.bg)$frame.color <- "white"
+V(net.bg)$color <- "orange"
+V(net.bg)$label <- "" 
+E(net.bg)$arrow.mode <- 0
+
+# Compute node degrees (#links) and use that to set node size:
+# deg <- igraph::degree(net.bg, mode = "all")
+# V(net.bg)$size <- deg*3
+
+plot(net.bg, layout=layout_on_grid)
+```
+
+network of our covariance matrix 
+
+- ggnet2 looks very good, but I can't get it to work with my covariance matrix (quite sure there is a way, but it won't be simple)
+- qgraph works out of the box so I am currently using that, but I will still have ot look at how to control the positioning of the networks
+
+```{r}
+bip = network(covSM,
+              matrix.type = "bipartite",
+              ignore.eval = FALSE,
+              names.eval = "weights")
+
+ggnet2(bip, edge.size = "weights")
+
+```
+
+
+```{r}
+x <- as.matrix(covSM)
+net <- graph_from_adjacency_matrix(x, weighted = TRUE)
+ggnet2(bip)
+```
+
+```{r}
+library(qgraph)
+qgraph(covSM, diag = FALSE, layout = 'spring', theme = "colorblind", minimum = 1.5)
+
+# need to work on grid layout 
+# this is done by using h$channels to get the position 
+# then make a matrix of the laytout, specifying NA for the corners 
+# then put that into the qgraph layout
+
+# also need to find a way to control the size of the nodes, based on their number of connections
+# might have to do it manually: calculate the number of connections on each, then specifcy the size of each node in the argument via a vector 
+
+```
+
+
