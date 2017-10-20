@@ -19,4 +19,10 @@ Steps:
 - rotate -90 (make sure that electrode 15 is on the left mid area). Rotation can be done by using the rotate tool 
 - adjust opacity
 - scale by using the scale tool 
-- change the mode of the overaly, usually "soft light", "overlay", or "hard light" does the job quite well. "hard light" might be slightly better because it shows the cells more... but some cropping will have to be done... but I suppose at this stage we don't have to get into that yet (but for publishing we will have to)
+- change the mode of the overaly, usually "soft light", "overlay", or "hard light" does the job quite well. "hard light" might be slightly better because it shows the cells more...)(but then the heatmap is more affected than in the case of soft light) but some cropping will have to be done... but I suppose at this stage we don't have to get into that yet (but for publishing we will have to)
+
+Examples: 
+
+![Using hard light](https://i.imgur.com/csANe7Q.png)
+
+![Using soft light](https://i.imgur.com/DoKgfum.png)
