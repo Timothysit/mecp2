@@ -113,15 +113,26 @@ Overview of spike activity in electrodes
 
 ![spike count heatmap](https://i.imgur.com/qZ2Y0t5.png)
 
+Spike distribution 
+
+![Spike count histogram](https://i.imgur.com/o4ZoQqC.png)
+
 
 Network weighted by covariance 
 
 ![network](https://i.imgur.com/dvJvZvZ.png)
 
+
+
+Effective Rank 
+
+![Effective Rank](https://i.imgur.com/vmvzYF2.png)
+
+
+
 TODO: 
 
-- add figure for spike distribution
-- add figure for effective rank 
+- embed interactive plotly histogram 
 
 
 
