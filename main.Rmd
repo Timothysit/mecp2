@@ -26,7 +26,7 @@ library(ggplot2)
 library(plyr)
 library(rhdf5)
 library(stringr)
-
+library(viridis) # awe-inspiring color palette
 library(sjemea)
 
 # source('remove_noisy.R')
@@ -56,7 +56,7 @@ I want to manually select the files I want to analyse and analyse all of them to
 # fourplot(s)
 
 # try this out in my data
-h <- h5.read.spikes("/media/timothysit/phts2/The_Mecp2_Project/feature_extraction/R_analysis/mecp2_spikes/UN_12_09_17-6A_DIV14.h5")
+h <- h5.read.spikes("/media/timothysit/phts2/The_Mecp2_Project/feature_extraction/R_analysis/mecp2_spikes/KO_12_09_17-6A_DIV14.h5")
 fourplot(h)
 ```
 # Burst analysis 
@@ -236,16 +236,22 @@ mapAnalyse <- function(s, electrodeMap, measure = 'burst'){
   for(i in 1:length(electrodeIndex)){
   spikeMap[i] <- length(h$spikes[[toString(electrodeIndex[i])]]) 
   if(electrodeIndex[i] == 99){
-    spikeMap[i] <- 1 
+    spikeMap[i] <- 1 # why is this set to 1? I thought it should be to 0 
   }
   # double brackets is needed to acceses h$spikes vector/list for some reason, I will look up why later but for now it works 
   }
   dim(spikeMap) <- c(8, 8)
   spikeMap <- t(spikeMap)
-  resultMap <- log(spikeMap) # log scale 
+  resultMap <- log10(spikeMap) # log scale 
   }
   
   # now we put the matrix nicely into a heatmap 
+  
+  # to make the heatmap work, we need to 1) remove the corners and 2) set the grounded electrodes to a different colour 
+  # this is done by setting the corner spike values to 0, assigning them to whtie 
+  # and setting grounded electrodes to NA, assigning them to gray 
+  # this may pose a challenege for the burst heat map as there are recorded electrodes that really has 0 burst activity recorded
+  # whereas 0 spikes is never seen before (I don't really believe this; it's either noise or bad spike-detection algorithm)
   
   # spectral color pallette 
   myPalette <- colorRampPalette(rev(brewer.pal(11, "Spectral")), space="Lab")
@@ -269,12 +275,12 @@ mapAnalyse <- function(s, electrodeMap, measure = 'burst'){
   # scale_fill_gradientn(colours = myPalette(100)) # spectral palette
   # scale_fill_viridis(name="log(# Spikes)", na.value="gray") # perhaps better color palette
   # scale_fill_gradientn(name="log(# Spikes)", na.value="gray", colours = viridis(256, option = "D")) 
-  scale_fill_gradientn(name="log(# Spikes)", na.value="gray", colours = c("white", viridis(256, option = "D")), values = c(0,0.5,1), limits = c(0, max(resultMap))) # use viridis but gradientn is easier for cotrolling other options
+  scale_fill_gradientn(name="log(# Spikes)", na.value="gray", colours = c("white", viridis(256, option = "D")), values = c(0,0.5,1), limits = c(0, max(resultMap))) # use viridis but gradientn is easier for controlling other options
   
   # geom_text(aes(label = electrodeIndex)) # electrode index, shall work on this later (need to transpose electrodeIndex and flip)
   fileName <- substr(basename(s$file), 1,  nchar(basename(s$file))-3) # remove last three characters, which are ".h5"
   format <- ".png"
-  ggsave(paste(fileName, format, sep = '')) 
+  ggsave(paste(fileName, format, sep = ''), path = '/media/timothysit/phts2/') 
 }
   
 ```
@@ -285,6 +291,15 @@ not too sure how to do this, the simplest way is just to loop through every file
 But for some analysis, we want to compare WT vs KO, and in others we want to look at development over time. 
 
 ```{r}
+electrodeIndex = c(99, 21, 31, 41, 51, 61, 71, 99,
+12, 22, 32, 42, 52, 62, 72, 82,
+13, 23, 33, 43, 53, 63, 73, 83,
+14, 24, 34, 44, 54, 64, 74, 84,
+15, 25, 35, 45, 55, 65, 75, 85,
+16, 26, 36, 46, 56, 66, 76, 86,
+17, 27, 37, 47, 57, 67, 77, 87,
+99, 28, 38, 48, 58, 68, 78, 99)
+
 library(tcltk)
 flist <- tk_choose.files()
 for(file in 1:length(flist)){
@@ -293,6 +308,119 @@ for(file in 1:length(flist)){
 }
 ```
 
+## Spike count distribution 
+
+### Attempt 1 
+```{r}
+# this thing is incomplete
+library(tcltk)
+flist <- tk_choose.files()
+colN <- c('File_name', 'DIV', 'Genotype', 'Identity', 'Spike_Count')
+mecp2Table <- data.frame(matrix(ncol = length(colN), nrow = length(flist)))
+colnames(mecp2Table) <- colN
+for(file in 1:length(flist)){
+  h <- h5.read.spikes(flist[file])
+  # add row to our table
+  # note that this require a very strict naming system 
+  # (there probably is a smarter way of doing this but I haven't figured)
+  filename = basename(flist[file])
+  div = substr(filename, 19, 20)
+  genotype = substr(filename, 1, 2)
+  batch = substr(filename, 13, 14)
+  spikeCount <- h$nspikes
+ #  mecp2Table <- rbind(mecp2Table, data.frame(File_name = filename, DIV = div, Genotype = genotype, Identity = batch))
+  mecp2Table$File_name[file] <- filename 
+  mecp2Table$DIV[file] <- div 
+  mecp2Table$Genotype[file] <- genotype 
+  mecp2Table$Identity[file] <- batch 
+  mecp2Table$Spike_Count[file] <- list(spikeCount) # note that we have named integers here, with the name representing channel order/number 
+} 
+
+saveRDS(mecp2Table, "mecp2Table.rds")
+
+# if you want to get the spike counts in a named integer vector, for example for the first file, then use 
+# mecp2Table$Spike_Count[[1]]
+
+# Histogram 
+# qplot(log10(mecp2Table$Spike_Count[[1]]), geom="histogram", xlab = "log10(Spike Counts)", binwidth=0.01) 
+# above is a quick and dirty plot, by ideally we want the full capabilities of ggplot2 
+
+# Histogram Overlay, plotting the weeks of development together 
+
+# we need to sort by "DIV" column 
+# and then plot histogram of Spike_Count 
+
+# ggplot(mecp2Table$Spike_Count, aes(x=Spike_Count) + geom_histogram(binwidth=0.5)
+
+
+```
+
+### Attempt 2 
+
+Uses a long form table to work nicely with ggplot2
+
+```{r}
+library(tcltk)
+flist <- tk_choose.files()
+colN <- c('File_name', 'DIV', 'Genotype', 'Identity', 'Electrode', 'Spike_Count')
+mecp2Table <- data.frame(matrix(ncol = length(colN), nrow = 0))
+colnames(mecp2Table) <- colN
+for(file in 1:length(flist)){
+  h <- h5.read.spikes(flist[file])
+  # add row to our table
+  # note that this require a very strict naming system 
+  # (there probably is a smarter way of doing this but I haven't figured)
+  filename = basename(flist[file])
+  div = substr(filename, 19, 20)
+  genotype = substr(filename, 1, 2)
+  batch = substr(filename, 13, 14)
+  spikeCount <- h$nspikes
+  for(electrode in 1:length(h$spikes)){
+    electrodeNum <- names(spikeCount)[electrode]
+    spikeNum <- spikeCount[[electrode]]
+    mecp2Table <- rbind(mecp2Table, data.frame(File_name = filename, DIV = div, Genotype = genotype, Identity = batch, Electrode = electrodeNum, Spike_Count = spikeNum))
+  }
+  
+} 
+
+# The problem is how to move on to the next file... because currently electrode will just go back to 1:length(h$spikes)
+# Maybe I need to use rbind() ... but I don't want to. Okay I ended up giving in. 
+
+# Tutorials to read for overlapping histograms 
+# http://www.sthda.com/english/wiki/ggplot2-histogram-easy-histogram-graph-with-ggplot2-r-package
+
+# Histogram plots with mean lines
+# library(easyGgplot2)
+# ggplot2.histogram(data=mecp2Table, xName='Spike_Count',
+#     groupName='DIV', legendPosition="top",
+#   alpha=0.5, addDensity=TRUE) 
+
+# Another way of doing it 
+# ggplot(mecp2Table, aes(xName = 'Spike_Count', fill = DIV)) + geom_histogram(alpha=0.2, position="DIV")
+# ggplot(mecp2Table, aes(Spike_Count, fill = DIV)) + geom_histogram()
+ggplot(mecp2Table, aes(log10(Spike_Count), fill = DIV)) + geom_histogram(alpha = 0.5, position = "identity") + theme_minimal() + 
+  scale_fill_viridis(discrete=TRUE, option="viridis") + 
+  ggtitle(mecp2Table$File_name[1]) 
+# theme_bw() + theme(panel.border = element_blank(), panel.grid.major = element_blank(), panel.grid.minor = element_blank(), axis.line = element_line(colour = "black")) # remove everything else
+# ggplot(mecp2Table, aes(Spike_Count, colour = DIV)) + geom_freqpoly()
+```
+
+Interactive Histogram!
+
+```{r}
+# Currently slightly hard-coded
+# Library
+library(plotly)
+div14spikes = mecp2Table[mecp2Table$DIV == "14", ]
+div22spikes = mecp2Table[mecp2Table$DIV == "22", ]
+div28spikes = mecp2Table[mecp2Table$DIV == "28", ]
+# Overlaid histogram of 2 vectors:
+graph=plot_ly(x = log(div14spikes$Spike_Count), opacity = 0.6, type = "histogram") %>%
+    add_trace(x = log(div22spikes$Spike_Count)) %>%
+    add_trace(x = log(div28spikes$Spike_Count)) %>%
+    layout(barmode="overlay")
+graph
+```
 
 
 # Firing Regularity 
@@ -402,6 +530,7 @@ for (electrode in 1:dim(h$spikes)){
 
 covM = cov(spikeCount)
 
+
 # 'hand calculation' of covariance matrix just to be sure
 # electrodeA = 1 
 # electrodeB = 2
@@ -422,7 +551,8 @@ stabilisedCount =  t( t(spikeCount) / colMeans(spikeCount) ) # divide each colum
 
 # stabilisedCount = spikeCount / sqrt(mean(spikeCount)) # divide by mean count of all electrodes
 covSM = cov(stabilisedCount) # S for stabilised
-
+write.table(covM, "/home/timothysit/Desktop/covM.txt", sep="\t")
+write.table(spikeCount, "/home/timothysit/Desktop/spikeCount.txt", sep="\t")
 
 ```
 
@@ -439,7 +569,7 @@ getCov <- function(s, startRecord = 0, endRecord = 12 * 60, bin = 0.1){
     vv = unlist(s$spikes[electrode])
     spikeCount[1:(endRecord/bin), electrode]  = table(cut(vv,seq(startRecord,endRecord,bin),include.lowest = TRUE))
     covM = cov(spikeCount)
-  } 
+  } -
   covM = cov(spikeCount)
   stabilisedCount =  t( t(spikeCount) / colMeans(spikeCount) )  # divide each column of spikeCount (of each electrode) by the squareroot of the mean of that column 
   covSM = cov(stabilisedCount) # S is for stabilised
@@ -519,7 +649,7 @@ plot(normEigenV)
 # now we compute Shannon entropy of the vector 
 
 # sEn <- entropy.plugin(normEigenV) # seems to give different results for some reason
-sEn <- -sum(normEigenV * log2(normEigenV))
+sEn <- -sum(normEigenV * log(normEigenV))
 
 print(sEn)
 
@@ -536,7 +666,7 @@ print(effectiveRank)
 effRank <- function(covM, plot = FALSE){
   eigenV <- eigen(covSM)$values 
   normEigenV <- eigenV / sum(eigenV)
-  sEn <- -sum(normEigenV * log2(normEigenV))
+  sEn <- -sum(normEigenV * log(normEigenV))
   if(plot == TRUE){
     plot(normEigenV)
   }
@@ -552,7 +682,7 @@ effRank <- function(covM, plot = FALSE){
 # meanSpike <- mean(spikeCount)
 meanSpike <- apply(spikeCount, 2, mean)
 varSpike <- apply(spikeCount, 2, var) 
-
+plot(varSpike, meanSpike)
 plot(sqrt(varSpike), meanSpike)
 
 ```
@@ -566,11 +696,25 @@ library(tcltk)
 flist <- tk_choose.files()
 # use efective rank function to obtain value and store in vector 
 effRankStore <- c()
+mecp2Table <- data.frame(matrix(ncol = 5, nrow = 0))
+colN <- c('File_name', 'DIV', 'Genotype', 'Identity', 'effective_rank')
+colnames(mecp2Table) <- colN
 for(file in 1:length(flist)){
   h <- h5.read.spikes(flist[file])
   covSM <- getCov(h) # get covariance matrix 
   effRankStore[file] <- effRank(covSM) # append effective rank to store
+  # add row to our table
+  # note that this require a very strict naming system 
+  # (there probably is a smarter way of doing this but I haven't figured)
+  filename = basename(flist[file])
+  div = substr(filename, 19, 20)
+  genotype = substr(filename, 1, 2)
+  batch = substr(filename, 13, 14)
+  mecp2Table <- rbind(mecp2Table, data.frame(File_name = filename, DIV = div, Genotype = genotype, Identity = batch, effective_rank = effRank(covSM)))
+  
 }
+
+saveRDS(mecp2Table, "mecp2Table.rds")
 
 print(effRankStore)
 
@@ -582,12 +726,47 @@ print(effRankStore)
 
 
 
+
 # plot them 
 
+## Group by individual culture 
+
 plot(effRankStore)
+library(ggplot2)
+ggplot(data = mecp2Table, aes(x = DIV, y = effective_rank, group = Identity)) + 
+  geom_line(aes(color=Identity)) + 
+  geom_point(aes(color=Identity))
 
-# Compare betwen WT and KO
+ggsave(paste('Effective_Rank', '1209', '.png', sep = '')) 
 
+## Group by genotype 
+
+plot(effRankStore)
+library(ggplot2)
+library(wesanderson) # just in case we need better colors
+ggplot(data = mecp2Table, aes(x = DIV, y = effective_rank, group = Identity)) + 
+  geom_line(aes(color=Genotype)) + 
+  geom_point(aes(color=Genotype))
+
+ggsave(paste('Effective_Rank', '1209', 'genotype', '.png', sep = '')) 
+
+# summarise effective rank data to get error bars
+library(Rmisc)
+effRankSummary <- summarySE(mecp2Table, measurevar="effective_rank", groupvars=c("Genotype"))
+
+## Plot group averages 
+ggplot(data = mecp2Table, aes(x=DIV, y = effective_rank, group = Genotype, color = Genotype)) + 
+  geom_point() + 
+  stat_summary(aes(x=DIV, y = effective_rank, group = Genotype), fun.y = mean, geom = 'line') + 
+  geom_errorbar(data = effRankSummary, aes(ymin=effective_rank-se, ymax=effective_rank+se), width=.1) + 
+  scale_color_manual(values=c("#FF0000", "#0000FF", "#000000")) + 
+  theme_bw()
+
+# group averages without the dots, this doesnt' work yet, need to sort out DIV
+ggplot(effRankSummary, aes(x= DIV, y=effective_rank, colour= Genotype)) + 
+    geom_errorbar(aes(ymin=effective_rank-se, ymax = effective_rank+se), width=.1) +
+    geom_line() +
+    geom_point()
 
 ```
 
@@ -668,7 +847,7 @@ smooth.isi.elec<-function(s) {
   ret
 }
 
-#Calculates fraction of electrodes theta bursting on any array. Input is list of spike trains from one array,
+# Calculates fraction of electrodes theta bursting on any array. Input is list of spike trains from one array,
 #output is number representing fraction of theta bursting on that array
 tburst.elec<-function(s){
   spks<-s$spikes

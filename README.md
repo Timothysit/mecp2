@@ -100,6 +100,31 @@ tc042_d24.mcd
 
 
 
+# Results in pictures 
+
+A quick summary of the progress so far, in figures. 
+
+Overview of raw data and detected spikes
+
+![raw plots](https://i.imgur.com/F3vrKcq.png)
+
+
+Overview of spike activity in electrodes 
+
+![spike count heatmap](https://i.imgur.com/qZ2Y0t5.png)
+
+
+Network weighted by covariance 
+
+![network](https://i.imgur.com/dvJvZvZ.png)
+
+TODO: 
+
+- add figure for spike distribution
+- add figure for effective rank 
+
+
+
 # Resources 
 
 Python library for electrophysiological signals analysis 
