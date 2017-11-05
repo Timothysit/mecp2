@@ -1,15 +1,6 @@
 # The Mecp2 Project 
 
-Test edit 
-
-- Here are some code written in R for analysis of microelectrode array data.
-- most of them based on Eglen's sjmea 
-
-New stuff in here: 
-
-- effective dimesionality 
-  - PCA 
-  - effective rank (ref here.) 
+The analysis here is divided into those based on `R` and those based on `matlab`, the main script to run for `R` is `main.Rmd`, the main script to run for `matlab` is `main.mat`, with the necessary functions stored inside `mat_functions`, therefore, add that to path. Both scripts will ask you to select a folder containing the `h5` and/or `.mat` files you want to analyse.
   
 ## Workflow for R analysis 
 
@@ -18,7 +9,7 @@ New stuff in here:
 - computer running unix (Mac or Linux)
 - Matlab (for converting raw `.mcd` files to `.h5` files with spikes only)
 - A suitable `C` compiler in Matlab (2017 matlab doens't seem to work on my computer for some reason, but it may be just me. It worked when I used an older versin of matlab/C compiler.)
-- RStudio (for spike analysis)
+- R and RStudio (for spike analysis)
 - Stephen Eglen code and packages (need to give more details on this)
 
 ### Overview
