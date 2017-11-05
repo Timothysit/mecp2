@@ -23,19 +23,23 @@ for ii = 1:length(spikeTimes)
         
 end 
 % yeah this works, not the most effieicnt way, but it works 
-
+% now just need to remove the zeros, and also prevent using ii+1
+% and simplify the code so there's not repeats. 
 %% now we count the number of spikes within each time frame 
 spikes(spikes == 0)  = nan; % 
+recordTime = 12 * 60 + 1; % time of recording in seconds
+spikes(spikes > recordTime) = nan; 
+% seomtimes there are reported spikes over 720 seconds, remove those
 % for example, number of spikes each second 
-recordTime = 12 * 60; % time of recording in seconds
-window = 0:1:recordTime;
+window = 0:1:recordTime; % look at spike every 1 second
 spikeTrain = histc(spikes, window); 
 % checked that it works columnwise for matrices
 %% check that we counted the correct number of spikes
 if sum(sum(spikeTrain)) == length(spikeTimes)
     fprintf('Function executed correctly \n')
 else 
-    fprinf('There is something wrong with the function \n') 
+    error('There is something wrong with the function \n') 
 end 
 
 end
+
