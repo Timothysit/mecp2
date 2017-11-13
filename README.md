@@ -97,7 +97,7 @@ A quick summary of the progress so far, in figures.
 
 Overview of raw data and detected spikes
 
-![raw plots](https://i.imgur.com/F3vrKcq.png)
+![Raw Plot](https://i.imgur.com/jjwS3sH.png)
 
 
 Overview of spike activity in electrodes 
