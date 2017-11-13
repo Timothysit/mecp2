@@ -69,7 +69,7 @@ plot(normEigenV)
 # now we compute Shannon entropy of the vector 
 
 # sEn <- entropy.plugin(normEigenV) 
-sEn <- -sum(normEigenV * log(normEigenV)) # should give same result
+sEn <- -sum(normEigenV * log(normEigenV)) # should give same result, note we are using base e
 
 print(sEn)
 
