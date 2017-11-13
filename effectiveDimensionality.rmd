@@ -73,7 +73,7 @@ sEn <- -sum(normEigenV * log(normEigenV)) # should give same result, note we are
 
 print(sEn)
 
-# Todo: compute this myself to check
+# TODO: compute by hand to check
 
 # finally, exp on that
 effectiveRank = exp(sEn)
