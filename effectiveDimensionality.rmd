@@ -58,7 +58,6 @@ library(entropy)
 # https://www.r-bloggers.com/singular-value-decomposition-svd-tutorial-using-examples-in-r/
 
 
-# currently don't know how to generate covM, let's do that with correlation matrix in the mean time: 
 
 # covM <- t3 # note, currently this is correlation 
 eigenV <- eigen(covSM)$values 
