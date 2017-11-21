@@ -637,10 +637,7 @@ library(entropy)
 # singular value decomposition tutorial: 
 # https://www.r-bloggers.com/singular-value-decomposition-svd-tutorial-using-examples-in-r/
 
-
-# currently don't know how to generate covM, let's do that with correlation matrix in the mean time: 
-
-# covM <- t3 # note, currently this is correlation 
+# covM <- t3 # note this is correlation 
 eigenV <- eigen(covSM)$values 
 normEigenV <- eigenV / sum(eigenV) # "normalise" so they sum to 1 
 # we do this to interpret the N eigenvalues as a distribution of N integers
