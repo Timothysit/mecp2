@@ -3,6 +3,7 @@
 - using PCA
 - using effective rank: http://ieeexplore.ieee.org/abstract/document/7098875/
 - participation ratio can also be computed, but is less preferred
+- matlab code for this also avilable in `anlaysis_functions`
 
 ### PCA 
 PCA procedure: 
