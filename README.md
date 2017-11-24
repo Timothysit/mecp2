@@ -1,6 +1,6 @@
 # The Mecp2 Project 
 
-<img src="hhttps://i.imgur.com/EsgfPE3.gif" width="500" height="500" />
+<img src="https://i.imgur.com/EsgfPE3.gif" width="500" height="500" />
 
 ![Spikes](https://i.imgur.com/EsgfPE3.gif)
 
