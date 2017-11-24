@@ -1,6 +1,6 @@
 # The Mecp2 Project 
 
-![Spikes](https://i.imgur.com/EsgfPE3.gifv)
+![Spikes](https://i.imgur.com/EsgfPE3.gif)
 
 The analysis here is divided into those based on `R` and those based on `matlab`, the main script to run for `R` is `main.Rmd`, the main script to run for `matlab` is `main.mat`, with the necessary functions stored inside `mat_functions`, therefore, add that to path. Both scripts will ask you to select a folder containing the `h5` and/or `.mat` files you want to analyse.
   
