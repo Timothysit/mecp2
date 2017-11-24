@@ -1,5 +1,7 @@
 # The Mecp2 Project 
 
+![Spikes!](https://i.imgur.com/EsgfPE3.gifv)
+
 The analysis here is divided into those based on `R` and those based on `matlab`, the main script to run for `R` is `main.Rmd`, the main script to run for `matlab` is `main.mat`, with the necessary functions stored inside `mat_functions`, therefore, add that to path. Both scripts will ask you to select a folder containing the `h5` and/or `.mat` files you want to analyse.
   
 ## Workflow for R analysis 
@@ -120,10 +122,28 @@ Effective Rank
 ![Effective Rank](https://i.imgur.com/vmvzYF2.png)
 
 
+# Comparing spike detection algorithms 
 
-TODO: 
 
+Note that Prez's algorithm is based on `Wave_Clus`.  
+
+![Imgur](https://i.imgur.com/w13eNTl.png)
+
+A close look at what's happening 
+
+![Imgur](https://i.imgur.com/NyVnTGa.png)
+
+Tuning thresholds 
+
+![Imgur](https://i.imgur.com/GgsBTHN.png)
+
+# Work in progrss 
+
+- better networks
+- network anlaysis 
+- auto and cross-correlation 
 - embed interactive plotly histogram 
+- Gaussian Process Classification, Feature Selection
 
 
 
