@@ -1,4 +1,6 @@
 function plotSpikes(spikeTrain, electrodeMatrix, electrode)
+    % note that spikeTrain will be spikeTrain for the entire MEA
+    % ie. numChannel x numSamples
     figure; 
     s1 = subplot(2, 1, 1); 
     imagesc(spikeTrain(:, electrode)') % spike of electrode as heatmap
