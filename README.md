@@ -6,7 +6,7 @@ We (Dr. Susanna Mierau, Riccardo Conci, and Timothy Sit (I)) are investigating t
 
 
 
-The analysis here is divided into those based on `R` and those based on `matlab`, the main script to run for `R` is `main.Rmd`, the main script to run for `matlab` is `main.mat`, with the necessary functions stored inside `mat_functions`, therefore, add that to path. Both scripts will ask you to select a folder containing the `h5` and/or `.mat` files you want to analyse.
+The analysis here is divided into those based on `R` (mainly statistical analysis, but I did do some early spike analysis there) and those based on `matlab`, the main script to run for `R` is `main.Rmd` in the `R_analysis` folderl. I am still working on a main script for matlab analysis, but all the required functions can be found inside the `Matlab_Analysis` folder. The `R` script will ask you to select a folder containing the `h5` and/or `.mat` files you want to analyse. I have also performed some preliminary statistical analysis which you can find in the R notebook inside the `Statistical_Analysis` folder.
   
 ## Workflow for R analysis 
 
