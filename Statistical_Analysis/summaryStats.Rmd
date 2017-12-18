@@ -1,0 +1,342 @@
+---
+title: "MECP2 Data Analysis"
+author: TS 
+date: \today
+toc: TRUE
+output:
+  pdf_document: default
+  html_document: default
+---
+
+- This document provides an overview of the extracted features from neural networks recorded using micro-electrode arrays (MEA) in wild-type (WT) and MECP2-defcieitn (HT, KO) mice. 
+- The current implementation provides summary statistics for 1209 and 2309 batch 
+- The current spike statistics are based on spikes detected using a mean-SD based threshold method after filtering with a Butterworth filter (same method in Manuel's Rich Club Topology paper)
+    + threshold of 5 x SD 
+
+
+```{r Setting things up, echo = FALSE, message=F, warning=F}
+library(tidyverse)
+library(R.matlab)
+library(ggrepel)
+library(ggthemes)
+library(ggpubr)
+# set the theme of our plots 
+th <- theme_tufte()
+
+# or use theme_set(theme_bw())
+
+# Avoid code from running outside of the PDF when I compile
+library(knitr)
+opts_chunk$set(tidy.opts=list(width.cutoff=60),tidy=TRUE)
+
+```
+Spike detection and spike anlaysis were performed in Matlab. `R` will be used to perform statsitsical analysis 
+```{r Load data from matlab, echo=FALSE}
+
+# Load 1209 data set (In `R` we call them dataframes)
+
+# matFile <- readMat('/media/timothysit/Seagate Expansion Drive/The_Mecp2_Project/feature_extraction/matlab/data/1209/featMatrix.mat')
+
+# if on windows 
+matFile <- readMat('D:/The_Mecp2_Project/feature_extraction/matlab/data/1209again/featMatrix/featMatrixM5.mat')
+
+# TODO: find way to simplify this
+df1209 <- as.data.frame(matFile$featMatrix)
+df1209 <- t(df1209)
+df1209 <- as.data.frame(df1209)
+
+# unlist everything in the dataframe
+df1209 = as.data.frame(lapply(df1209, unlist))
+
+# Cite this in the paper / methods section 
+# Henrik Bengtsson (2016). R.matlab: Read and Write MAT Files and Call MATLAB from Within R. R package version 3.6.0-9000. https://github.com/HenrikBengtsson/R.matlab 
+
+# add effective rank to the data frame
+# if on windows 
+effRankFile <- readMat('D:/The_Mecp2_Project/feature_extraction/matlab/data/1209again/featMatrix/effRankM5.mat')
+effRank <- unlist(effRankFile)
+
+df1209$effRankCov <- effRank
+
+
+```
+
+
+```{r Load 2309 data set, echo=FALSE}
+#Let's load the 2309 dataframe as well 
+
+# if on windows 
+matFile2309 <- readMat('D:/The_Mecp2_Project/feature_extraction/matlab/data/2309/featMatrix/featMatrixM5.mat')
+
+df2309 <- as.data.frame(matFile2309$featMatrix)
+df2309 <- t(df2309)
+df2309 <- as.data.frame(df2309)
+df2309 = as.data.frame(lapply(df2309, unlist))
+```
+
+
+```{r, echo=FALSE}
+# We then merge the two dataframes
+df <- rbind(df1209, df2309)
+
+```
+
+# Overview of data
+
+Let's begin with a preview of the data
+
+```{r}
+head(df)
+```
+
+## What is the distribution of genotypes? 
+
+- note that this includes all recording throughout development 
+
+```{r}
+ggplot(data = df) + 
+  geom_bar(mapping = aes(x = genotype)) + 
+  ylab('Number of recordings') + 
+  th
+```
+
+
+
+# Spike Statistics 
+
+First let's ask the question: do we see any trends in spike firing rate over development? 
+
+```{r Firing rate}
+ggplot(data = df) + 
+  geom_point(mapping = aes(x = DIV, y = aveFireRate, color = genotype)) + 
+  geom_text_repel(data = subset(df, aveFireRate > 200), aes(DIV, aveFireRate, label = ID)) + 
+  ylab('Average firing rate (Hz)') + 
+  th 
+```
+
+We notice that there is an outlier obscuring the plot, let's look at the overall activity without it. 
+
+```{r Average Firing rate, message=F, warning=F}
+ddf <- df[!(df$aveFireRate > 100),]
+ggplot(data = ddf) + 
+  geom_point(mapping = aes(x = DIV, y = aveFireRate, color = genotype)) + 
+  geom_smooth(mapping = aes(x = DIV, y = aveFireRate, color = genotype)) +
+  ylab('Average firing rate (Hz)') + 
+  th
+
+```
+
+
+- Firing rate does not change much over time, or perhaps show a slight decrease 
+- Firing rate amongst the three genotypes seem quite similar over time 
+
+
+
+
+# Bursting activity 
+
+## Do our networks show bursting activity? 
+
+We first look at how many of our neural networks showed bursting activtiy: 
+
+- bursting activity calculate using the gamma distribution method (Used by Eglen)
+- this calculates the bursting activity of each electrode independently
+- total burst count is the sum of the number of bursts observed in all electrodes
+
+```{r Bursting activity}
+ggplot(data = df) + 
+  geom_point(mapping = aes(x = DIV, y = totalBurstCount, color = genotype)) + 
+  ylab('Total Burst Count') + 
+  geom_text_repel(data = subset(df, totalBurstCount > 1000), aes(DIV, totalBurstCount, label = ID)) + 
+  th 
+```
+
+Again we see outlier 1209-6A, the same outlier for average firing rate. There may be positive correlation between fire rate and burst rate. We will consider that later, but for now let's see if we can find any patterns in bursting activity by removing the outlier.
+
+```{r Burst count without outlier}
+ggplot(data = subset(df, totalBurstCount < 1000)) + 
+  geom_point(mapping = aes(x = DIV, y = totalBurstCount, color = genotype)) + 
+  ylab('Total Burst Count') + 
+  th
+```
+
+## Are there any difference in bursting activity between the genotypes over development?
+
+```{r Burst count without outlier smooth plot}
+ggplot(data = subset(df, totalBurstCount < 1000)) + 
+  geom_point(mapping = aes(x = DIV, y = totalBurstCount, color = genotype)) + 
+  geom_smooth(mapping = aes(x = DIV, y = totalBurstCount, color = genotype)) + 
+  ylab('Total Burst Count') + 
+  th
+```
+
+```{r}
+ggplot(data = subset(df, totalBurstCount < 1000)) + 
+  geom_boxplot(mapping = aes(genotype, totalBurstCount)) + 
+  ylab('Total burst count') + 
+  theme_tufte()
+```
+
+
+Looking more specifically at the distribution of bursting activities 
+
+```{r}
+ggplot(data = subset(df, totalBurstCount < 1000)) + 
+  geom_histogram(mapping = aes(x = totalBurstCount, fill = genotype), alpha = 0.3) + 
+  xlab('Total burst count') + 
+  th
+```
+
+
+
+- most MEAs exhibit not bursting activity regardless of genotype 
+- may be useful to look at the proportion of burst / no-bursting activity for each genotype 
+
+
+# Firing Regularity 
+
+- based on calculation by [Mochizuki et al 2016](http://www.jneurosci.org/content/36/21/5736.long)
+- firing regularity computed by looking at interspike intervals (ISI)
+- uniform interspike intervals --> very regular 
+- this is done by fitting a gamma distribution to ISI, and computing the logshape of the gamma distribution
+- Here I consider each electrode independently and calculate their firing regularity
+- I then take the mean of all regularity values in the electrode array to get the 'total regualrity' 
+- Note that there are some electrodes, and thus MEA, where this calculation is not possible, most likely because it is impossible to fit it to a gamma distribution 
+
+Interpretation of regularity values: 
+
+- greater absolute value of logshape = more regular spiking 
+- logshape < 1 --> bursting 
+- logshape > 1 --> sporadic firing
+- logshape = 1 --> Poisson distributed firing 
+
+## How does firing regularity change with neural network development?
+
+```{r Firing regularity, message=F, warning=F}
+ggplot(data = subset(df, is.finite(totalReg))) + 
+  geom_point(mapping = aes(x = DIV, y = totalReg, color = genotype)) + 
+  geom_smooth(mapping = aes(x = DIV, y = totalReg, color = genotype)) + 
+  ylab('Firing regualrity') + 
+  geom_text_repel(data = subset(df, totalReg > 500 & is.finite(totalReg)), aes(x = DIV, y = totalReg, label=ID)) + 
+  th
+```
+
+Thoughts: 
+
+- it appears that all three genotypes converge to a regualrity value of 0 over development 
+- there are two particular outliers in the HT group
+- (possible) high regularity value at start of development for HT and WT group, but number of samples too small to draw any conclusions
+
+## Differences in regularity between genotypes?
+
+```{r Firing regularity: genotype comparison}
+ggplot(data = subset(df, is.finite(totalReg))) + 
+  geom_boxplot(mapping = aes(genotype, totalReg)) + 
+  ylab('Regularity') + 
+  th 
+```
+
+- hard to say, most of regularity values very close to 0 (it can't be 0 because we are taking the log) 
+
+
+# Effective Rank 
+
+
+## Does effective rank change through development? 
+
+```{r Effective Rank vs DIV}
+ggplot(data = subset(df, is.finite(effRankCov))) + 
+  geom_point(mapping = aes(x = DIV, y = effRankCov, color = genotype)) + 
+  geom_smooth(mapping = aes(x = DIV, y = effRankCov, color = genotype)) + 
+  ylab('Effective Rank') + 
+  th 
+```
+
+## Is there a difference in effective rank between genotypes? 
+
+```{r Effective Rank vs Genotype, message=F, warning=F}
+ggplot(data = subset(df, is.finite(effRankCov))) + 
+  geom_boxplot(mapping = aes(genotype, effRankCov)) + 
+  ylab('Effective Rank') + 
+  th
+```
+
+- Although not significant, effective rank seems to be picking up some differences compared to spike and burst statistics
+- looking at the 2309 and 1209 combined, it seems that there is some sigmoidal pattern of the effective rank, but the phase (eg. peak time) of that pattern is different between genotypes
+
+# What if we look at some of these statitics only in cultures with bursts?
+
+(I think this is what Manuel did in his Rich Club Topology paper; looking only at neural networks with burst, and then only using burst period to do his analysis rather than the whole 12 minutes)
+
+```{r Only bursting MEA, message=F, warning=F}
+
+# Firing rate 
+
+p0 <- ggplot(data = subset(df, totalBurstCount > 0)) + 
+  geom_point(mapping = aes(x = DIV, y = aveFireRate, color = genotype)) + 
+  geom_smooth(mapping = aes(x = DIV, y = aveFireRate, color = genotype)) +
+  ylab('Average firing rate (Hz)') + 
+  ggtitle('Average firing rate') + 
+  th
+
+# Burst 
+
+p1 <- ggplot(data = subset(df, totalBurstCount < 1000 & totalBurstCount > 0)) + 
+  geom_point(mapping = aes(x = DIV, y = totalBurstCount, color = genotype)) + 
+  geom_smooth(mapping = aes(x = DIV, y = totalBurstCount, color = genotype)) + 
+  ylab('Total Burst Count') + 
+  ggtitle('Total Burst Count') + 
+  th
+
+# Effective Rank 
+p2 <- ggplot(data = subset(df, is.finite(effRankCov) & totalBurstCount > 0)) + 
+  geom_point(mapping = aes(x = DIV, y = effRankCov, color = genotype)) + 
+  geom_smooth(mapping = aes(x = DIV, y = effRankCov, color = genotype)) + 
+  ylab('Effective Rank') + 
+  ggtitle('Effective Rank') + 
+  th 
+
+# Firing regularity 
+
+p3 <- ggplot(data = subset(df, is.finite(totalReg) & totalBurstCount > 0)) + 
+  geom_point(mapping = aes(x = DIV, y = totalReg, color = genotype)) + 
+  geom_smooth(mapping = aes(x = DIV, y = totalReg, color = genotype)) + 
+  ylab('Firing regularity') + 
+  ggtitle('Firing regularity') + 
+  th
+
+ggarrange(p0, p1, p2, p3, 
+          labels = c("A", "B", "C", "D"),
+          ncol = 2, nrow = 2)
+
+```
+
+Still hard to tell... Will have to look at their distribution.
+
+# Moving forward 
+
+## Data selection 
+
+- I have created a [spreadsheet](https://docs.google.com/spreadsheets/d/1V1AB-rHq4vqZaLUIMfAs3baUr0GWPEhUrT0Ih0vyqAw/edit#gid=1756339059) to record down which files we are not going to include in our analyses
+- Once we have that sorted I can run through the analyses again 
+
+## Data analyses 
+
+- network burst detection 
+  + there are only a few appropriate methods I found for this, the most promising one is [Valkki et al 2017](https://www.frontiersin.org/articles/10.3389/fncom.2017.00040/full) 
+  + I contacted the corresponding author of this paper and he says he will email his student to see if she can make the code share-able 
+  + Another way is to use Maneull's method, but I think we need to email him to clarify what is done as I can't recreate it just by reading his paper
+- calculating similar metrics within burst (effective rank, regularity)
+- I am also thinking of quantifying the distribution of spikes across electrodes within individual MEAs, as this is what we were qualitatively trying to do by looking at the heatmaps and spike count distributions
+  + One way is to do normality (or other probability distribution) tests, eg. KS or SW tests
+  + it may be interesting to see if there is any relationship between this and effective rank
+- I am thinking of calculating more measures that characterise the "controllability" of the system, particular in [Gu et al 2015](https://www.nature.com/articles/ncomms9414) 
+  + but this will require creating a linear model of the network and this may be non-trivial, I am asking Guillaume about it. 
+- try the feature matrix on machine learning workflow just to make sure it works first 
+
+And of course any comments/ideas what we want to do next is welcome :) 
+
+
+  
+
+
