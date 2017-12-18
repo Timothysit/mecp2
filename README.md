@@ -156,7 +156,7 @@ Tuning thresholds
 
 The schemaball connectivity graph is plotted using Paul Kassebaum's circularGraph function, which can be found [here](https://www.mathworks.com/matlabcentral/fileexchange/48576-circulargraph?s_tid=prof_contriblnk)
 
-![Dynamic network](https://i.imgur.com/XZavfHB.png) 
+![Dynamic network](https://www.dropbox.com/s/37ik1g2olf9qkyb/dynamicConnectionClean.png?dl=1) 
 
 Dynamic network is made based on the work by Sizemore and Bassett which can be found [here](https://github.com/asizemore/Dynamic-Graph-Metrics). 
 
