@@ -1,5 +1,7 @@
 # The Mecp2 Project 
 
+We (Dr. Susanna Mierau, Riccardo Conci, and Timothy Sit (I)) are investigating the network properties that arises during neurodevelopment, and how they are disrupted in neurodevelopmental disorders. We are currently using a mice model of autism (MECP2 deficient mice, hence the title of the project) as a starting point for investigating differences in network properties in these neurons. We are particularly interesting in the topology of the functional connectivity network (Riccardo's focus) and how the dynamics of this network is controlled (my focus).
+
 ![Spikes](https://i.imgur.com/MKBPf8d.gif) <img src="https://i.imgur.com/sPkRTtE.gif" alt="dynamic heatmap" width="200" height="200">
 
 
@@ -95,9 +97,17 @@ tc042_d24.mcd
 
 
 
+# Overview of workflow 
+
+![Workflow overview](https://i.imgur.com/fkAVDbn.png)
+
 # Results in pictures 
 
 A quick summary of the progress so far, in figures. 
+
+We start with a set of 60 voltage recordings from each micro-electrode array: 
+
+![MEA array voltage trace](https://i.imgur.com/ZrD43Zk.png)
 
 Overview of raw data and detected spikes
 
@@ -138,6 +148,18 @@ A close look at what's happening
 Tuning thresholds 
 
 ![Imgur](https://i.imgur.com/GgsBTHN.png)
+
+# Network Analysis 
+
+
+![SchemaBall network](https://i.imgur.com/cBSMdzx.png)
+
+The schemaball connectivity graph is plotted using Paul Kassebaum's circularGraph function, which can be found [here](https://www.mathworks.com/matlabcentral/fileexchange/48576-circulargraph?s_tid=prof_contriblnk)
+
+![Dynamic network](https://i.imgur.com/XZavfHB.png)
+
+Dynamic network is made based on the work by Sizemore and Bassett which can be found [here](https://github.com/asizemore/Dynamic-Graph-Metrics). 
+
 
 # Work in progrss 
 
