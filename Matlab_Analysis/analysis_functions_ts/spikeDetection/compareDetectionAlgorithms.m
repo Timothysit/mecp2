@@ -68,7 +68,7 @@ aesthetics()
 %% Average waveform with varying threshold 
 
 figure 
-for multiplier = 10:20
+for multiplier = 3:10
     [spikeTrain, finalData, threshold] = detectSpikes(data, 'Tim', multiplier); 
     [spikes, averageSpikes] = spikeAlignment(data, spikeTrain); 
     window = -floor(length(averageSpikes)/2):floor(length(averageSpikes)/2);
@@ -79,7 +79,7 @@ for multiplier = 10:20
 end 
 title('Tim, 2.0ms')
 xlabel('Time since spike on set (in frames)')
-legend(string(10:20), 'Location', 'southwest')
+legend(string(3:10), 'Location', 'southwest')
 legend boxoff 
 
 %% Plot the three together (average spike with different thresholds)
@@ -122,7 +122,7 @@ legend boxoff
 
 
 subplot(1, 3, 3) 
-for multiplier = 6:2:20
+for multiplier = 3:10
     [spikeTrain, finalData, threshold] = detectSpikes(data, 'Tim', multiplier); 
     [spikes, averageSpikes] = spikeAlignment(data, spikeTrain); 
     window = -floor(length(averageSpikes)/2):floor(length(averageSpikes)/2);
@@ -134,9 +134,11 @@ for multiplier = 6:2:20
 end 
 title('Tim, 2.0ms')
 xlabel('Time since spike onset (in frames)')
-leg = legend(string(6:2:20), 'Location', 'southwest'); 
+leg = legend(string(3:10), 'Location', 'southwest'); 
 title(leg, 'Threshold multiplier')
 legend boxoff 
+
+
 
 
 

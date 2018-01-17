@@ -37,14 +37,15 @@ function batchGetSpike
         % data = electrodeMatrix
         % detect spikes
         tic;
-        mSpikes = sparse(getSpikeMatrix(data, 'Manuel', 5));
-        tSpikes = sparse(getSpikeMatrix(data, 'Tim', 11));
-        pSpikes = sparse(getSpikeMatrix(data, 'Prez', 4));
+        % mSpikes = sparse(getSpikeMatrix(data, 'Manuel', 5));
+        tSpikes = sparse(getSpikeMatrix(data, 'Tim', 8));
+        % pSpikes = sparse(getSpikeMatrix(data, 'Prez', 4));
         toc
     
         %% save 
         fileName = strcat(files(file).name(1:end-4), '_info', '.mat'); 
-        save(fileName, 'mSpikes', 'tSpikes', 'pSpikes');
+        % save(fileName, 'mSpikes', 'tSpikes', 'pSpikes');
+        save(fileName, 'tSpikes');
         progressbar(file/length(files));
     end 
     

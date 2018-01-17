@@ -40,7 +40,7 @@ aveFireRate = sum(sum(spikes)) / (size(spikes, 1) / samplingRate);
 
 %% detect individual electrode bursts - NNO method
 
-% the nno method is problmeatically implemented 
+% the nno method is problematically implemented 
 % currently only allow min_spike = 2
 % electrodeBurst = burstDetect(spikes, spikeTimes, 'nno'); 
 % 
@@ -145,13 +145,44 @@ featMatrix(file).aveFireRate = full(aveFireRate);
 featMatrix(file).totalBurstCount = totalBurstCount; 
 featMatrix(file).totalAveBurstSpikeNum = totalAveBurstSpikeNum;
 
-% regualrity 
+% regularity 
 featMatrix(file).totalReg = totalReg; 
 
 % control theory
 featMatrix(file).effRankCov = effRank(spikes, 'covariance');
 % assume sparse matrix, may take long / run out of mem 
 % if a full matrix is used
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% average and modal controllability 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+downSpikes = sparseDownSample(spikes, 720 * 100, 'sum');
+
+% Remove electrodes with no spikes 
+% When considering correlation / partial correlation, having zero variance
+% creates NaN (you can't divide by 0). 
+noSpikeElectrode = find(sum(downSpikes) == 0); 
+downSpikes(:, noSpikeElectrode) = []; 
+
+adjM = getAdjM(downSpikes, 'partialcorr'); 
+aveControl = ave_control(adjM); 
+modalControl = modal_control(adjM);
+
+% skewness of the cotrollability metrics 
+% skweness function: 0 = correct for bias, 1 = don't correct for bias
+featMatrix(file).aveControlSkew = skewness(aveControl, 0);
+featMatrix(file).modalControlSkew = skewness(modalControl, 0); 
+
+% uniformness of the controllability metrics
+    % with the KS test 
+featMatrix(file).aveControlSkew = eveness(aveControl, 'ks'); 
+featMatrix(file).modalControlSkew = eveness(modalControl, 'ks'); 
+
+% average of the controllability metrics 
+featMatrix(file).aveControlave = mean(aveControl); 
+featMatrix(file).modalControlave = mean(modalControl); 
 
 % graph theory? 
 

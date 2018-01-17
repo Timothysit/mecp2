@@ -89,6 +89,12 @@ aesthetics()
 
 %% Factor Analysis 
 
+%% Controllability Metrics 
+
+% Using calculation from Gu et al 2015 
+% with two new ways of looking at the metric; mean, and uniformality of
+% distribution 
+
 
 
 

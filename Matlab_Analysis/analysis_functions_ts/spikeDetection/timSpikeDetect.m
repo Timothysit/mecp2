@@ -23,8 +23,19 @@ filteredData = filtfilt(b, a, double(data));
 y_snle = snle(filteredData', 1); 
 m = mean(y_snle); 
 s = std(y_snle); 
-multiplier = 12; % this is the crux of the detection 
-threshold = m + multiplier*s; 
+
+% 20171213: in accordance to the original paper (Mukhopadhyay and Ray
+% 1998), I will use a scaled mean rather than a standard dev based
+% threshold.
+
+% some suggestion that 8 is the value to use here (Gibson et al 2008, but
+% will be dependent of the data you have). Use compareSpikeDetect.m and
+% plotSpikeAlignment.m to verify that the detected spikes do look like
+% spikes
+
+multiplier = 8; % this is the crux of the detection 
+% threshold = m + multiplier*s; 
+threshold = m * multiplier;
 spikeTrain = y_snle > threshold; 
 % this is a much large std than what others had to use...
 % but this is because we used NEO

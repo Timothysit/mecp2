@@ -91,7 +91,13 @@ if strcmp(method,'Tim')
     m = mean(y_snle); 
     s = std(y_snle); 
     % multiplier = 12; % this is the crux of the detection 
-    threshold = m + multiplier*s; 
+    
+    % 20171123: I have changed this to match with the original
+    % implementation (Mukhodpadhyay and Ray 1998);
+    % to use a scaled mean as the threshold rather than a
+    % standard deviation based approach
+    % threshold = m + multiplier*s; 
+    threshold = m * multiplier;
     spikeTrain = y_snle > threshold; 
     % this is a much large std than what others had to use...
     % but this is because we used NEO

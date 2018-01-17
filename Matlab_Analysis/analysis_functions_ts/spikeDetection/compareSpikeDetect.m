@@ -41,7 +41,7 @@ removeAxis()
 
 
 %% Tim's method 
-[spikeTrain, finalData, threshold] = detectSpikes(data, 'Tim', 12);
+[spikeTrain, finalData, threshold] = detectSpikes(data, 'Tim', 8);
 subplot(100, 1, [76 80])
 singleRastPlot(spikeTrain) 
 numSpike = sum(spikeTrain);
