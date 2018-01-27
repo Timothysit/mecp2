@@ -51,13 +51,13 @@ To combine the subfolders into one big file, do the following:
 
 ## How to overlay heatmap onto cell culture 
 
-Requirements: 
+### Requirements
 
 - gimp 
 - heatmap photos (usually in png but other formats are okay)
 - MEA culture photos (usually in TIF)
 
-Steps: 
+### Steps 
 
 - Open Gimp 
 - Go to open, select heatmap photo 
@@ -71,8 +71,16 @@ Steps:
     + move the picture around to ensure fit (shortcut: `m`)
 - change the mode of the overaly, usually "soft light", "overlay", or "hard light" does the job quite well. "hard light" might be slightly better because it shows the cells more...)(but then the heatmap is more affected than in the case of soft light) but some cropping will have to be done... but I suppose at this stage we don't have to get into that yet (but for publishing we will have to)
 
-Examples: 
+### What your set up should look like on gimp
+
+![Overlay gimp set up](https://i.imgur.com/DwdjDUC.png)
+
+### Examples
+
+Using the hard light option (some cropping may need to be done)
 
 ![Using hard light](https://i.imgur.com/csANe7Q.png)
+
+Using the soft light option
 
 ![Using soft light](https://i.imgur.com/DoKgfum.png)
