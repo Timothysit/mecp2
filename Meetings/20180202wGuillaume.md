@@ -1,7 +1,10 @@
-Things to talk about: 
+# Things to talk about
 
 - progress 
     + spike detection: 3 methods. Question: any other good methods? 
+        * 1. (Manuel) Butterworth, threshold = mean - multiplier * stdev
+        * 2. (Wave_clus) Elliptical, threshold = median - multiplier * stdev
+        * 3. (Tim) Non-linear energy operator, threshold = mean * multiplier
     + looking at effective rank within burst only. Question: any good? / valid? 
     + effective rank: values still quite high; basically either poor connection, or a lot of noise in the data; just spontaneous random firing
     + factor analysis. Question: how to make it a feature? 
@@ -18,7 +21,7 @@ Things to talk about:
     + any methods of looking at sparse spikes? 
 
 
-List of featuers that we currently have: 
+# List of featuers that we currently have
 
 (averaged over 60 electrodes)
 
@@ -48,12 +51,12 @@ List of featuers that we currently have:
     - assumption 1: make a unifrom distribution using the min and max of the data 
     - then do a ks test, then take the p value as a quantificaiton of the eveness
 
-Other possible features: 
+Other possible features?
 
 - network burst (from Eglen, basically burst but requiriing a minimum of 6 electrodes or so)
 
 
-Current challenges: 
+# Current challenges: 
 
 - low SNR / spike detection 
     + spike detection should actually be okay... but because of SNR, may need to make spike detection more robust 
@@ -63,11 +66,39 @@ Current challenges:
     + included refractory period (2.0ms)
     + parameter setting is key, tried out gradient method, but the spike-count vs. threshold plot doens't have a sudden drop as I would have expected, therefore not sure to what extent that will be effective; I am worried that this approach may just lead to random thresholds
 
+# Results
+
+## Spike detection parameter tuning 
+
+Currently, the value of the multipliers are set based on previous papers. I am thinking about how to set it in a principled manner. One way is to look at the how the spike count changes as we vary the threhsold, as use the gradient to set the threshold.
+
+
+Electrode with low spike count according to current spike detection methods (and low fluctuation just by looking at raw trace): 
+
+![1209 6A DIV22 E11](https://i.imgur.com/QGTpM1C.png)
+
+
+Electrode with high spike count according to current spike detection methods (and high fluctuation just by looking at raw trace):
+
+![1209 6A DIV22 E37](https://i.imgur.com/Aya1QG0.png)
+
+so in this case, shoudl the thresold be 3? (using Prez's or Manuel's method)
 
 
 
-Some sample Raster plots (1209-6A DIV22)
 
+## Sample of raw data
+
+
+1209-6A DIV22
+
+![1209 6A DIV22 grid trace](https://i.imgur.com/Ru8i5jK.png)
+
+
+
+## Some sample Raster plots 
+
+1209-6A DIV22
 
 ![Wave_clus, multiplier = 4](https://i.imgur.com/Gb9LR0I.png)
 
@@ -75,16 +106,14 @@ Some sample Raster plots (1209-6A DIV22)
 
 
 
-Some sample of spike counts (1209-6A DIV22)
+## Some sample of spike counts 
+
+1209-6A DIV22
+
+![Spike count heat map 1209 6A DIV22](https://i.imgur.com/KTtfR4p.png)
 
 
-Controllability; average and modal (1209-6A DIV22)
-
-
-
-Controllability distribution (1209-6A DIV22)
-
-Effective rank and other summary stats (See R document)
+## Effective rank and other summary stats (See R document)
 
 ![1209-6A DIV22](https://i.imgur.com/F8RQF01.png)
 
@@ -93,14 +122,37 @@ Effective rank and other summary stats (See R document)
 But I think this was done by using quite a generous spike detection algorithm. The more conservative spike detection method (Manuel's method, multiplier of 5, with refractory period) return near full rank values.
 
 
-Factor analysis 
+## Controllability; average and modal 
+
+Based on calculations and code by Gu et al 2015 (Bassett group)
+
+1209-6A DIV22
+
+![Average and modal controllability of ](https://i.imgur.com/Zni5GTZ.png)
+
+Gu et al (2015) noted anticorrelation between average and modal controllability, so this is expected.
+ 
+## Controllability distribution (1209-6A DIV22)
+
+![Average controllability heatmap](https://i.imgur.com/hWzTyc9.png)
+
+My current thinking is that we can quantify the distribution of this; 
+
+1. Skewness 
+2. Uniformity
+
+
+## Factor analysis 
 
 ![Factor loading for 1209-6A DIV22](https://i.imgur.com/13Ph7X4.png)
 
+Not too sure how to look at factor anlaysis...
+
+- how to interpret it 
+- how to make a feature for classification
 
 
-
-Some documents: 
+# Some documents
 
 [Some summary stats for 1209 batch](https://www.dropbox.com/s/rzd1smaf12kx2e4/summaryStats20171215.pdf?dl=0)
 
