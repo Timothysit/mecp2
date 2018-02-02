@@ -1,6 +1,6 @@
 # The Mecp2 Project 
 
-We (Dr. Susanna Mierau, Riccardo Conci, and Timothy Sit (I)) are investigating the network properties that arises during neurodevelopment, and how they are disrupted in neurodevelopmental disorders. We are currently using a mice model of autism (MECP2 deficient mice, hence the title of the project) as a starting point for investigating differences in network properties in these neurons. We are particularly interesting in the topology of the functional connectivity network (Riccardo's focus) and how the dynamics of this network is controlled (my focus).
+We (Dr. Susanna Mierau, Riccardo Conci, and Timothy Sit (I), from the Neuronal Oscillations Group, with the help of Dr. Guillaume Hennequin from the Computational and Biological Learning Lab, and Dr. Manfred Kitzbichler from the Behavioural and Clinical Neuroscience Institute, University of Cambridge, UK) are investigating the network properties that arises during neurodevelopment, and how they are disrupted in neurodevelopmental disorders. We are currently using a mice model of autism (MECP2 deficient mice, hence the title of the project) as a starting point for investigating differences in network properties in these neurons. We are particularly interesting in the topology of the functional connectivity network (Riccardo's focus) and how the dynamics of this network is controlled (my focus).
 
 ![Spikes](https://i.imgur.com/MKBPf8d.gif) <img src="https://i.imgur.com/sPkRTtE.gif" alt="dynamic heatmap" width="200" height="200">
 

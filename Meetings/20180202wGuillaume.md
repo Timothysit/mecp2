@@ -103,3 +103,8 @@ Factor analysis
 Some documents: 
 
 [Some summary stats for 1209 batch](https://www.dropbox.com/s/rzd1smaf12kx2e4/summaryStats20171215.pdf?dl=0)
+
+[Gu 2015 paper on controllability metrics](https://www.dropbox.com/s/kv09arrefoyoyej/Gu%20et%20al.%20-%202015%20-%20Controllability%20of%20structural%20brain%20networks.pdf?dl=0)
+
+[Supplementary material for Gu 2015](https://www.dropbox.com/s/7h0m9iicvrpm56q/Gu%202015%20Supp.pdf?dl=0)
+
