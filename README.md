@@ -136,6 +136,12 @@ Effective Rank
 
 # Comparing spike detection algorithms 
 
+Algorithms we are testing: 
+
+- simple threshold-based methods 
+- nonlinear energy operator followed by threshold 
+- continuous wavelet transform 
+- (in progress) Gaussian Process Spike Detection
 
 Note that Prez's algorithm is based on `Wave_Clus`.  
 
