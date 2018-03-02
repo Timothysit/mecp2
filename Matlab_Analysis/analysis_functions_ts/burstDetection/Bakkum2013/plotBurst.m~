@@ -1,0 +1,14 @@
+function HistogramISIn( SpikeTimes, N, Steps )  
+% ISI_N histogram plots 
+
+
+figure; hold on 
+map = hsv(length(N)); 
+
+cnt = 0; 
+
+for FRnum = N 
+    cnt = cnt + 1; 
+    ISI_N = SpikeTimes(FRnum:end) - SpikeTimes(1:end-(FRnum-1)); 
+    n = histc(ISI_N * 1000, Steps * 1000); 
+    n = smooth(n, 'lowess
