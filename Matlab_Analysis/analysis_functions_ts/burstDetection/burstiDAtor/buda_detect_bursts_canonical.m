@@ -1,6 +1,6 @@
 function bursts=buda_detect_bursts_canonical(spikes,start_ISI,continue_ISI,min_nspikes)
 % 'canonical' DA burst detection
-
+% from: https://github.com/nno/burstiDAtor
 % 20171213 TS: I think there is something wrong with the min_nspikes of thie code
 % Seem to show the same number of brust even if I set a different 
 % min_nspikes
