@@ -41,7 +41,7 @@ This can be done with the script `batchGetSpike.m`
 But before that, it may be helpfult to verify the quality of the signal in the MEAs, you can do that via `batchGridTrace.m`, which saves the raw voltage traces of each MEA. 
 You can then look through the traces to check for abnormal electrodes. (It may useful here to develop automatic ways of doing this, for example, using a hard threshold of 50uV for filtered traces). 
 
-You can then run the analysis over all spike files using `batchAnalyse.m`, it current supports 
+You can then run the analysis over all spike files using `batchAnalyse.m`, it currently supports 
 
 - some basic statistics 
 - burst detection and burst statistics
