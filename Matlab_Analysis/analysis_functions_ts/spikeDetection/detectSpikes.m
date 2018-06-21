@@ -1,12 +1,23 @@
-function [spikeTrain, finalData, threshold] = detectSpikes(data, method, multiplier)
-% code inspired by Gaidica 
-% http://gaidi.ca/weblog/extracting-spikes-from-neural-electrophysiology-in-matlab
-% filter
-% remove low frequency content of signal so high frequency spikes more
-% detectable
-% Wn values: Wn = Fc / (Fs / 2)
-% where Fc is the cut-off frequency 
-% Fs is the sampling frequency 
+function [spikeTrain, finalData, threshold] = detectSpikes(data, method, multiplier, L)
+
+% input 
+    % data: a n x 1 vector containing the signal, where n is the number of
+    % samples 
+    % method: string value specifying the spike detection method to use 
+    % multiplier: the threshold multiplier to use for your chosen method 
+    % L: loss parameter for wavelet method, won't matter if other methods
+    % used. Default is zero as recommended by the creator.
+
+% Author: Tim Sit, sitpakhang@gmail.com 
+% Last update: 20180503
+
+    
+if ~exist('L')
+    L = 0; 
+end 
+    
+
+    
 
 %% General paramters
 
@@ -79,6 +90,8 @@ end
 
 %% implement different methods to detect spikes  
 if strcmp(method,'Tim')
+    % code inspired by Gaidica 
+    % http://gaidi.ca/weblog/extracting-spikes-from-neural-electrophysiology-in-matlab
     % butterworth filter 
     lowpass = 600; 
     highpass = 8000; 
@@ -96,8 +109,11 @@ if strcmp(method,'Tim')
     % implementation (Mukhodpadhyay and Ray 1998);
     % to use a scaled mean as the threshold rather than a
     % standard deviation based approach
-    % threshold = m + multiplier*s; 
-    threshold = m * multiplier;
+    
+    % 20180413: referred back to this just for historical comparison for
+    % thesis
+    threshold = m + multiplier*s; 
+    % threshold = m * multiplier;
     spikeTrain = y_snle > threshold; 
     % this is a much large std than what others had to use...
     % but this is because we used NEO
@@ -151,7 +167,11 @@ if strcmp(method,'Manuel')
     s = std(filteredData); 
     % multiplier = 5;
     threshold = m - multiplier*s; 
-    spikeTrain = filteredData < threshold; % negative threshold
+    % negThreshold = m - 8 * s; % maximum threshold, a simple artefact removal method 
+    spikeTrain = filteredData < threshold; 
+    
+   
+ 
 
     % impose refractory period
     refPeriod = 2.0 * 10^-3 * fs; % 2ms 
@@ -173,6 +193,84 @@ if strcmp(method,'Manuel')
     end 
 end 
 
+%%  Z. Nenadic and J.W. Burdick 2005 
+% , Spike detection using the 
+%   continuous wavelet transform, IEEE T. Bio-med. Eng., vol. 52,
+%   pp. 74-87, 2005.
+
+
+if strcmp(method,'cwt')
+    
+    
+    % Filter signal 
+    lowpass = 600; 
+    highpass = 8000; 
+    wn = [lowpass highpass] / (fs / 2); 
+    filterOrder = 3;
+    [b, a] = butter(filterOrder, wn); 
+    filteredData = filtfilt(b, a, double(data)); 
+    
+    % input sampling frequency as kHz
+    Wid = [0.5 1.0]; % 1 x 2 vector of expected minimum and maximum width [msec] of transient 
+    %  to be detected Wid=[Wmin Wmax]. For most practical purposes Wid=[0.5 1.0];
+    
+    % TS 20180228, let's try to be slightly more generous... 
+    % Wid = [0.2 1.0]; result: same, no change in spike count
+    
+    Ns = 5; % Ns - (scalar): the number of scales to use in detection (Ns >= 2);
+    option = 'c'; % the action taken when no coefficients survive hard thresholding 
+    %   'c' means conservative and returns no spikes if P(S) is found to be 0
+    %   'l' means assume P(S) as a vague prior (see the original reference)
+    % L = -0.2; % L is the factor that multiplies [cost of comission]/[cost of omission].
+    %   For most practical purposes -0.2 <= L <= 0.2. Larger L --> omissions
+    %   likely, smaller L --> false positives likely. For unsupervised
+    %   detection, the suggested value of L is close to 0.  
+    
+    wname = 'bior1.5'; 
+    
+    %   wname - (string): the name of wavelet family in use
+    %           'bior1.5' - biorthogonal
+    %           'bior1.3' - biorthogonal
+    %           'db2'     - Daubechies
+    %           'sym2'    - symmlet
+    %           'haar'    - Haar function
+    %   Note: sym2 and db2 differ only by sign --> they produce the same
+    %   result;
+    
+    PltFlg = 0; 
+    CmtFlg = 0; 
+    %   PltFlg - (integer) is the plot flag: 
+    %   PltFlg = 1 --> generate figures, otherwise do not;
+    %  
+    %   CmtFlg - (integer) is the comment flag, 
+    %   CmtFlg = 1 --> display comments, otherwise do not;
+
+    spikeFrames = detect_spikes_wavelet(filteredData, fs/1000, Wid, Ns, option, L, wname, PltFlg, CmtFlg); 
+    
+    spikeTrain = zeros(size(data)); 
+    spikeTrain(spikeFrames) = 1;
+    
+     % impose refractory period
+    % refPeriod = 2.0 * 10^-3 * fs; % 2ms 
+    % I think there is a more efficient/elegant way to do this, but I haven't 
+    % taken time to think about it yet 
+    % refractory period
+    % for i = 1:length(spikeTrain)
+    %    if spikeTrain(i) == 1 
+    %        refStart = i + 1; % start of refractory period 
+    %        refEnd = round(i + refPeriod); % end of refractory period
+    %        if refEnd > length(spikeTrain)
+    %            spikeTrain(refStart:length(spikeTrain)) = 0; 
+    %        else 
+    %            spikeTrain(refStart:refEnd) = 0; 
+    %        end 
+    %    end 
+    % end 
+    
+   
+    threshold = 0; 
+    finalData = filteredData;
+end 
 
 
 
