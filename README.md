@@ -11,6 +11,10 @@ The analysis here is divided into those based on `R` (mainly statistical analysi
 # Thesis / Project Report 
 
 [Now available here!](https://www.dropbox.com/s/7aiqgjgdymeow37/project_report_Tim_Sit.pdf?dl=0)
+
+## Poster
+
+[Poster presented at the Cambridge Neuroscience Symposium -  Mental Plasticity & Development (March 2018)](https://www.dropbox.com/s/nkofw9g0boqbysy/final_MECP2_TS_Poster_CNS.pdf?dl=0)
   
 ## Workflow for R analysis 
 
