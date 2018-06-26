@@ -1,5 +1,5 @@
 function [header,m,channels] = MEA_load_bin_experimental(binfile,plt)
-% THIS IS A EXPERIMENTAL FORK 
+% THIS IS AN EXPERIMENTAL FORK 
 % There is some change this will not work (or worse, output wrong values)
 % if the recording duration is not exactly 720 seconds
 % This function truly reads the .raw file one channel at a time, which aims
@@ -102,13 +102,15 @@ recordDuration = round(recordDuration / 2, -1); % round to nearest 10^1
 %% get data
 mkdir(binfile(1:length(binfile)-4))
 % start looping through channels here
+[fid] =fopen(binfile);
+[trash, readCount]=fread(fid,newstart,'*char',0,machineformat);
+
 for i=1:length(channels)
 % this (aims to) read the binary file channel by channel
 
-[fid] =fopen(binfile);
-[trash]=fread(fid,newstart,'*char',0,machineformat);
-[data]=fread(fid,recordDuration,'int16',0,machineformat);%change to uint16 for data from older versions of MC_tool
-fclose(fid);
+
+[data, readCount]=fread(fid, recordDuration,'int16',0,machineformat);%change to uint16 for data from older versions of MC_tool
+
 
 % directly assign channel to m, no need to reshape 
 m = data;
@@ -168,6 +170,9 @@ dat = m;
 sprintf('Channel: %d; ',channels(i))
 save([binfile(1:length(binfile)-4) filesep binfile(1:length(binfile)-4) '_' num2str(channels(i)) '.mat'],'dat','channels','header','uV','ADCz','fs')
 end % end looping of all channels 
+
+% close file 
+fclose(fid);
 
 end
 
