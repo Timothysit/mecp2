@@ -17,6 +17,13 @@ function MEA_batchConvert(ext)
 
 % TODO: Improve the command line output of this
 
+% Last update: 20180626 
+% TS: Added the conversion options
+
+%% Select conversion mode 
+
+convertOption = 'electrode'; % save electrode by electrode in a MEA-specific folder
+% convertOption = 'whole'; % save the entire grid as one variable
 
 %% initialize
 
@@ -52,7 +59,7 @@ for i=1:length(files)
         end;
     end;
     if skip==0
-        MEA_load_bin(files(i).name);
+        MEA_load_bin(files(i).name, convertOption);
     end;
 end;
 
