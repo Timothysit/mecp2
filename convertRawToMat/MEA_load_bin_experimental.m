@@ -105,6 +105,8 @@ mkdir(binfile(1:length(binfile)-4))
 [fid] =fopen(binfile);
 [trash, readCount]=fread(fid,newstart,'*char',0,machineformat);
 
+progressbar % start progressbar
+
 for i=1:length(channels)
 % this (aims to) read the binary file channel by channel
 
@@ -169,6 +171,9 @@ dat = m'; % matlab reads tall matrices more efficiently
 dat = m; 
 sprintf('Channel: %d; ',channels(i))
 save([binfile(1:length(binfile)-4) filesep binfile(1:length(binfile)-4) '_' num2str(channels(i)) '.mat'],'dat','channels','header','uV','ADCz','fs')
+
+% update progess bar
+progressbar(i / length(channels))
 end % end looping of all channels 
 
 % close file 
