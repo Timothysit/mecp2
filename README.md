@@ -8,14 +8,19 @@ We (Dr. Susanna Mierau, Riccardo Conci, and Timothy Sit (I), from the Neuronal O
 
 The analysis here is divided into those based on `R` (mainly statistical analysis, but I did do some early spike analysis there) and those based on `matlab`, the main script to run for `R` is `main.Rmd` in the `R_analysis` folderl. I am still working on a main script for matlab analysis, but all the required functions can be found inside the `Matlab_Analysis` folder. The `R` script will ask you to select a folder containing the `h5` and/or `.mat` files you want to analyse. I have also performed some preliminary statistical analysis which you can find in the R notebook inside the `Statistical_Analysis` folder.
 
-# Thesis / Project Report 
+## Thesis / Project Report 
 
 [Now available here!](https://www.dropbox.com/s/7aiqgjgdymeow37/project_report_Tim_Sit.pdf?dl=0)
 
 ## Poster
 
 [Poster presented at the Cambridge Neuroscience Symposium -  Mental Plasticity & Development (March 2018)](https://www.dropbox.com/s/nkofw9g0boqbysy/final_MECP2_TS_Poster_CNS.pdf?dl=0)
-  
+
+## R notebook 
+
+Rendered version available [here](http://htmlpreview.github.io/?https://github.com/Timothysit/mecp2/blob/master/R_analysis/mecp2_network_analysis.nb.html)
+Source code available in `R_analysis` folder.
+
 ## Workflow for R analysis 
 
 ### Requirements
