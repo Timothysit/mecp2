@@ -61,8 +61,7 @@ def detect_spikes(spike_data, method='manuel', fs=25000, multiplier=5):
 
 
 def down_sample_spike_matrix(spike_matrix, down_sample_factor=2500):
-    
-    
+
     original_num_samp = np.shape(spike_matrix)[1]
     new_num_samp = original_num_samp / down_sample_factor 
     reshaped_spike_matrix = np.reshape(spike_matrix, (int(num_channels), int(new_num_samp), -1))
