@@ -31,6 +31,33 @@ def mea_mat_to_numpy(mat_filepath, verbose=True):
     print('File succesfully saved to %s' % (original_filename + '.npy'))
 
 
+def mea_mat_to_xarray(mea_data_dict, file_name=None):
+    """
+    Convert dictionary obtained from matlab file to xarray dataset.
+
+    Parameters
+    ----------
+    mea_data_dict
+    file_name
+
+    Returns
+    -------
+
+    """
+    fs = mea_data_dict['fs'][0][0]
+    num_samples = np.shape(mea_data_dict['dat'])[1]
+    time_in_sec = np.arange(num_samples) / fs
+    mea_ds = xr.Dataset({'raw': (['Channel', 'Time'], mea_data_dict['dat'])},
+                        coords={'Channel': ('Channel', mea_data_dict['channels'][0]),
+                                'Time': ('Time', time_in_sec)})
+
+    mea_ds.attrs['ADCz'] = mea_data_dict['ADCz'][0][0]
+    mea_ds.attrs['fs'] = fs
+    if file_name is not None:
+        mea_ds.attrs['name'] = file_name
+
+    return mea_ds
+
 def make_grid_matrix(data_vec, num_x_channel=8, num_y_channel=8, grounded_electrode=[15]):
     """
     Reorganise data into the a matrix that corresponds to the physical location of the electrodes.
