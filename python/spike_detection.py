@@ -30,8 +30,45 @@ def detect_spikes(raw_data, method='manuel', fs=25000):
     elif method == 'wavelet':
         print('Still need to port wavelet method to python')
 
-
     return spike_matrix
+
+
+def filter_raw_traces(raw_data, low_pass=600, high_pass=8000, filter_order=3, fs=25000):
+    """
+
+    Parameters
+    ----------
+    raw_data  : (numpy ndaarray)
+        numpy ndarray with shape (numChennl, numSamples)
+    low_pass : (float)
+        lower cutoff frequency (Hz)
+    high_pass : (float)
+        higher cutoff frequency (Hz)
+    filter_order : (int)
+        filter order
+    fs : (int)
+        sampling rate
+
+    Returns
+    -------
+
+    """
+
+
+    wn = np.array([low_pass, high_pass]) / (fs / 2)
+    b, a = ssignal.butter(filter_order, Wn=wn, btype='bandpass')
+
+    filtered_data = list()
+
+    for channel_trace in raw_data:
+
+        filtered_channel = ssignal.filtfilt(b, a, channel_trace)
+        filtered_data.append(filtered_channel)
+
+    filtered_data = np.stack(filtered_data)
+
+    return filtered_data
+
 
 
 def load_spyking_circus_data(verbose=True):
