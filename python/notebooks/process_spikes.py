@@ -39,7 +39,7 @@ def bin_spikes_sparse(spike_df, spike_time_column='spikeTime',
             spike_df[cluster_column] == cell_id]
 
         # NOTE: careful that histogram is performed on a single pandas series, otherwise
-        # all other values in multiple columns will be used. (Resolved bug)
+        # all other values in multiple columns will be used. (Resolved bug)t
         binned_vector, time_coords = np.histogram(cell_spike_df[spike_time_column], num_bins,
                                                   range=(t_start, t_end))
         if output_type == 'sparse':
