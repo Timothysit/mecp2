@@ -1,0 +1,391 @@
+#+TITLE: Mecp2 project
+
+* Data access
+
+Dropbox link: https://www.dropbox.com/sh/pn32lvt9gy4bku0/AABqhdSzZUOBedRu-ZmVao58a?dl=0
+
+Recording logs: https://www.dropbox.com/sh/14tbhhes0l8ur71/AADVNmeZN9wDnMa2vivczJSta?dl=0
+
+
+
+* Spike deteciton / exploratory analysis dahsboard
+
+** Conversion from 0-60 system in spyking circus to position system in MC MEA
+
+
+
+* Work log 
+
+** 2020-04-20: Go over some data Alex recorded, and think about analysis (2)
+
+session 1:
+
+ - PV-Ai32 (excitation) files
+ - ArchT (inhibtion) files
+
+Analysis: 
+
+ - first, just look at spike count / rate differences
+ - also look whether there is any spatial effect 
+ - then correlation matrix 
+
+PAT 200219 2C 
+
+ - the spontaneous activity seems to be highly correlated between a few electrodes
+ - then during stimulation, almost all electrodes become active, and there is a ramp of activity (that takes about 60 seconds to reach the peak) 
+   - maybe some are more correlated than others, but hard to tell, maybe the correlation matrix can be supported in a way that may show that 
+  
+Question: is the corerlation matrix from Pearson correlation, may be worthwhile to try spike tiling coefficient.
+
+Will just start looking into PAT 200219 2C DIV 17 and see what the data looks like and the recording log 
+
+ - channel 51 and 33 grounded 
+ - baseline period of 2 minutes 
+
+will be nice to have a photostimulation triggered average / examples.
+
+may be fastest if I load the data up in python and make some plots / do the spike detection 
+
+
+session 2: 
+
+ - ported Manuel's method for detecting spikes 
+ - I think it will take 2 sessions or so to build a spike detection dashboard and port the other spike detection methods so there is nice way to see stuff
+    - mainly want to be able to manually set the multiplier
+    - and also see a live update of the detected spikes times and the aligned spikes 
+
+
+
+
+
+
+** 2020-04-23: Read about the spike detection comparison method paper (3)
+
+session 1:
+
+looking into spikeForest: 
+
+github link: https://github.com/flatironinstitute/spikeforest2
+
+biorxiv paper: https://www.biorxiv.org/content/10.1101/2020.01.14.900688v1
+
+and make notes on the biorxiv paper
+
+but from the main website here:
+https://spikeforest.flatironinstitute.org/
+
+it seems that 
+
+ - for accuracy, SpykingCircus and Ironclust both do very well 
+ - Kilosort2 is generally quite good as well, but somehow quite a few missing fields
+ - WaveClus is also not very well tested 
+
+
+SpykingCircus Algorithm: 
+
+ - template-matching based algorithm 
+ - reconstruct signal as a linear sum of individual waveforms 
+ - documentation: https://spyking-circus.readthedocs.io/en/latest/introduction/release_notes.html
+ - paper: https://elifesciences.org/articles/34518
+
+
+I think the main thing to do is to find the ground truth dataset which is the most similar to our MEA data, and see which algorithm does best. 
+
+ - paired boyden one seems okay, but this is in vivo
+ - paired CRCNS HC1 also in vivo 
+ - paired english is also in vivo 
+ - kampff lab dataset also in vivo 
+ - /paired MEA64C YGER is the one I want; 8 x8 MEA/
+       - https://elifesciences.org/articles/34518
+       - thier data: https://zenodo.org/record/1205233#.XqHzEilKgUF
+
+
+SpykingCircus has the highest score for that, Kilosort and Kilosort2 are both good; 0.82 and 0.81. 	
+
+Let's try out Spyking Circus then... 
+
+session 2: 
+
+ - will finish reading the preprint first, then 
+** 2020-04-29: Extending the analysis dashboard (6)
+
+session 1: 
+
+ - thinking of features to add to the dahsboard
+ 
+1. custom change of colormap (done)
+2. switch between linear and log-scale (kind of done)
+3. custom time range to plot
+4. make the grid layout (6 x 6 electorde grid)
+5. Correlation matrix and network diagram 
+
+
+also provide a way to upload the TIF image and align it to the grid; but that is likely to take longer.
+
+
+session 2:
+
+ - will add time range slider
+    - actually this will take some time to implement...  may defer it to the weekend
+ - started adding the grid plot, but still quite slow... ideally also want to work on plotting networks in python today 
+
+
+session 6: 
+
+ - added network plot, quite happy with it but can be improved.
+
+
+** 2020-05-02: Look into spike detection and sorting (4)
+
+
+session 1: 
+
+ - waiting for spkying circus to install, will also spend the time looking into the geometry of the channels 
+ - okay, got the grid layout sorted, next step is look into how to put the data in a format to be used by Spkying circue
+
+session 2: 
+
+ - making the configuration file 
+ - still not sure how the data file should be organised (the documentation for HDF5 was not exactly clear)
+
+session 4: 
+
+ - still couldn't figure out how to simply put my numpy array into something that can be read by spyking forest... 
+** 2020-05-02: Try spike sorting on another dataset, and work on plotting the distribution of things (3)
+
+session 1: 
+
+ - will run spike sorting on the dataset with photoactivation 
+
+I think electrode 15 is used for grounding (will double check that on the Thursday meeting), I will add that to the spyking circus parameter and hopefully that helps denoising.
+
+electrode 15 on the MEA corresponds to the coordinates (0, 600), which corresponds to electrode index 3.
+
+ - note that there is the compliant that not enough spikes are gathered 
+ - the processing is telling me that they kept 57 templtaes out of 71 after merging, ie. the number of templates is about the same as the number of electrodes... 
+
+the waveform looks better but I still won't see they are very good... 
+
+
+session 2: 
+
+ - will actually try to read the spike output from the spyking circus method
+ - I think I will even compare it with the threshold method 
+ - starting to port the Nenandic wavelet code, but just realised that this will actually require some work, may be better to just run the calculation in matlab for now... 
+
+
+
+session 3: 
+
+ - will run the Nenandic spike detection and compare the results with spyking circus 
+
+** 2020-05-06: Compare wavelet method spike detection and spyking circus method (2)
+
+session 1: 
+
+ - will load up the spike from wavelet method 
+
+session 2: 
+
+ - still working on getting the matrix to compare spike count.. almost there...
+
+session 3: 
+
+ - got the matrices nicely plotted
+
+** 2020-05-07: Adding plotting of multiple different distribution of metrics, and user-interface improvements (3)
+
+
+session 1: 
+
+ - will add a selector as to what distirbution to plot
+ - did that, but still need to implement method to compute those distributions
+
+
+session 2: 
+
+ - working on saving the spike data
+ - got the xarray method to work, but it is creating a sparse matrix which is just wasting space... may need to look back into how I deal with sparse xarray 
+
+session 3: 
+
+ - will get the mutiple metric thing done first, then work on the saving sparse spike thing more tomorrow.
+
+
+** 2020-05-08: Adding plotting multiple node metric distribution (2)
+
+session 1: 
+
+ - created a separate figure for plotting node metric 
+ - still need to get the firing rate as a metric, also need to work on adding the twiny (and perhaps even more)
+
+session 2: 
+
+ - okay, got twiny to work (at least for 2 metric, but should be able to extend to three metric (just need to which third metric there can be...)
+
+session 3: 
+
+ - will work on UI improvements; placing the buttons where they should be.
+ - moved the buttons around, 
+** 2020-05-10: Testing out saving to pandas dataframe and loading back to xarray (1)
+
+session 1
+
+
+** 2020-05-11: Torubleshooting pandas and xarray disagreeing on spikes (1)
+
+
+session 1: 
+
+ - found the bug: apparently ~np.histogram~ also works if you give it a pandas series of multiple columns. This resulted in the 'electrode' column also being included, which then led to doubling of spikes because the electrode value was interpreted as spike times as well 
+ - was worried that this bug also exists in the multispaceworld code, so did a quick search through my code (on github, so I get to see on documents), it seems that I have used the 'spikeTime' column in all cases of using ~np.histogram~, so I think I am safe, phew... 
+
+** 2020-05-11: Finding more files to test the spike detection as well as the and loading of multiple spike matrices (2)
+
+session 1
+
+Going through the dropbox file to look at which file has TTX added so I can test the spike detection code. 
+
+hmm... not obvious from the record / file names which one has TTX... and I am not going to go through all the records.. I will wait for Alex to reply.
+
+meanwhile, I think I will select the same culture to make plots.
+
+session 2: 
+
+loading multiple spike matrices is actually going to be more involved than I expected.. basically I need to rewrite entirely how I store the spike and correlation matrices. I think the idea is to make a dictionary of spike data, and then let the plotting function determine whether the dictionary has more than one entry and make the plot from there. 
+
+
+** 2020-05-12: Looking into spike detection for pre-TTX and post-TTX file (3)
+
+session 1: 
+
+ - downloaded and filtering the data
+ - also spending some time setting up code to convert matlab array to xarray dataset
+
+session 2: 
+
+ - working on plotting raw and filtered traces 
+ - there were some memory issue with making tons of plots of the raw data, now resolved 
+
+session 3: 
+
+ - setting up spyking cirus, still need to configure ground electrode
+ - will finish off this spike detection work tomorrow 
+
+** 2020-05-13: Run spike detection on data with TTX and without TTX (3)
+
+session 1: 
+
+ - finished running spyking circus 
+
+session 2: 
+
+ - will run wavelet method (using matlab) on pre-TTX and post-TTX data.
+
+session 3: 
+
+ - made plots to compare the methods
+ - it seems that CWT is the winner here!
+
+
+
+** 2020-05-15: Migrate wavelet method from matlab to Python (3) 
+
+session 1: 
+
+ - porting the code, I think I am around 40% done, okay maybe 60% if I am being optimistic, but none of this is tested yet, and I am not confident with the indexing, so ideally I will have to test this line by line later. Aim to finish porting, at least in writing,  in the next session 
+
+session 2: 
+
+ - almost there, only about 10 more lines to go.
+
+it seems that Matlab updated their function for calculating cwt: 
+https://uk.mathworks.com/help/wavelet/ref/cwtold.html
+
+might be good to check with Alex which version of matlab he is running.
+
+Also pywt does not support continuous wavelet tranfsorm of bior1.5. I am not sure if this is an impelmentation thing or there is actually no continuous wavelet trasnform of bior1.5...
+** 2020-05-15: Continue migration of wavelet method from matlab to Python (4)
+
+
+session 2:
+
+ - ~pywt.cwt~ is very slow compared to matlab's ~cwt~ for some reason... 
+    - oh wait that was just becaused I need to specify Khz rather than Hz
+ - I also looked at ~dwt~ and ~swt~, but the shape of their output is very different
+
+
+swt seems to be approaching what I want since it does not downsample, but it outputs a 3D tensor of shape (3, 2, 1000), whereas cwt outputs a 2D matrix of shape (74, 1000). There's also the thing where I cannot specify the scale with swt.
+
+okay, it seems that ~pywt.cwt~ behaves very similarly to matlab's old cwt... but how do I get the wavelet that is most similar to bior1.5??? 
+
+
+session 3: 
+
+Just want to check what is the difference between the new and old cwt functions:
+found this article here: 
+https://uk.mathworks.com/matlabcentral/answers/451444-advantages-of-using-the-new-cwt-interface-over-the-old-cwt-interface
+
+but it seems that I can't get bior1.5 with the new cwt... 
+
+also see: https://uk.mathworks.com/matlabcentral/answers/474843-the-difference-between-the-old-version-and-new-version-of-cwt-continuous-wavelet-transform
+
+but this all a bit technical and I don't really get it...
+
+I can't find bior1.5 on the new cwt function...
+
+--------------------------------------------------
+
+trying to find a continuous wavelet that is most similar to the biorthogonal bior1.5 
+
+http://ataspinar.com/2018/12/21/a-guide-for-using-the-wavelet-transform-in-machine-learning/
+
+from the above link it seems that the Gaussian wavelet is quite close to bior1.5?
+
+Ther ethey as using gaus5
+
+
+let me try to plot the wavelet myself (and plot the wavleet on top of each other) so I can compare...
+
+------------------------------------------
+
+
+session 4: 
+
+ - tried out gaus5, but the output it gives is a lot different from bior1.5 in matlab... so may not be a good idea if I want to get similar results...
+
+I can still try to let it run as is and see if that works... but I am definitely not confident, actually I think it may have to do with the scale parameter... maybe that.. 
+
+** 2020-05-16: Add datashader plot of raw channel trace to mecp2 dashboard (4)
+
+session 1 and 2: mainly experimenting with the datashader options. 
+But I still don't fully understand how datashader works... may actually be a good idea to spend 2 hours or so making note on it tomorrow if I have time. It just seems like very impressive calculation and I think it will be useful to know how it works. But I am not sure if I have more interesting / important stuff planned tomorrow.
+
+
+session 3: 
+
+ - will actually work on adding the plot to the dashboard
+
+session 4: 
+
+ - okay, finally managed to get the raw trace on.
+** 2020-05-17: More attempts to migrate wavelet method from matlab to Python (3)
+
+session 1: 
+
+ - will see why the wavelet look different and look at how they are different
+ - actually, if the wavelet values is the only thing I need... can I just call matlab to load that part? 
+
+session 2: 
+
+ - don't think it is going to work 
+ - trying to call matlab from python 
+
+session 3: 
+
+ - called function on matlab, that works.
+** 2020-05-20: Look at similarity of templates (2) 
+
+session 1: 
+
+ - 
