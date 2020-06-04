@@ -120,6 +120,7 @@ end
 if strcmp(method, 'peakghost')
     % fprintf('Using peak method \n') 
     alpha = 0.2;
+    peakAlignedSpikeMatrix  = [];
     for spikeTimeSeries = 1:size(spikeMatrix, 1)
         % find positive peaks
         % [pks,locs] = findpeaks(spikeMatrix(spikeTimeSeries, :));
@@ -133,13 +134,20 @@ if strcmp(method, 'peakghost')
         spEnd = spikePeakLoc + round(durationInFrame / 2);
         if spStart > 0 && spEnd < size(spikeMatrix, 2)
             plot(spikeMatrix(spikeTimeSeries, spStart:spEnd), 'Color', [0 0 0] + 1 - alpha);
+            peakAlignedSpikeMatrix = [peakAlignedSpikeMatrix; ...
+                spikeMatrix(spikeTimeSeries, spStart:spEnd)];
+                
         else
             warning(['Spike exceeded limit, not plotted. Spike Number: ' num2str(spikeTimeSeries)])
         end 
         hold on
     end 
     % plot the average waveform on top 
-    aveSpikeWaveForm = mean(spikeMatrix);
+    % aveSpikeWaveForm = mean(spikeMatrix);
+    
+    % a better mean average waveform after aligning to the peak
+    aveSpikeWaveForm = mean(peakAlignedSpikeMatrix);
+    
     [pks,locs] = findpeaks(-aveSpikeWaveForm);
     spikePeakLoc = locs(abs(pks) == max(abs(pks)));
     spStart = spikePeakLoc - round(durationInFrame / 2);
