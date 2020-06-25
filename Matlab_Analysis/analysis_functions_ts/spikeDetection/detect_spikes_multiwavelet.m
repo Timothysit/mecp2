@@ -46,7 +46,7 @@ end
 num_channel = size(filteredData, 2);
 
 % Start loading bar
-progress_bar = waitbar(0,'Performing wavelet detection on each channel...');
+progress_bar = waitbar(0, 'Performing wavelet detection on each channel...');
 
 for channel_idx = 1:num_channel
     
