@@ -58,7 +58,8 @@ function TE = detect_spikes_wavelet(...
 
 
 %admissible wavelet families (more wavelets could be added)
-wfam = {'bior1.5','bior1.3','sym2','db2','haar'};
+wfam = {'bior1.5','bior1.3', 'sym2','db2','haar', ...
+        'db3', 'mexh'};
 
 if sum(strcmp(wname,wfam)) == 0
     error('unknown wavelet family')
@@ -196,7 +197,7 @@ switch num2str(wname)
   for i = 1:Ns
     Scale(i) = Width(i)/dt - 1;   % Scale is not defined yet no???
   end
- case 'db2'
+ case {'db2', 'db3', 'db4'}
   Scales = 2:ScaleMax;
   c = cwt(Signal,Scales,wname);
   for i = 1:length(Scales)
@@ -215,7 +216,7 @@ switch num2str(wname)
   WidthTable = WidthTable + [1:length(Scales)] * Eps;
   %look-up table
   Scale = round(interp1(WidthTable,Scales,Width,'linear'));
- case 'sym2'
+ case {'sym2', 'mexh'}
   Scales = 2:ScaleMax;
   c = cwt(Signal,Scales,wname);
   for i = 1:length(Scales)
@@ -234,7 +235,7 @@ switch num2str(wname)
   WidthTable = WidthTable + [1:length(Scales)] * Eps;
   %look-up table
   Scale = round(interp1(WidthTable,Scales,Width,'linear'));
- case 'bior1.3'
+ case 'bior1.3' 
   Scales = 2:ScaleMax;
   c = cwt(Signal,Scales,wname);
    for i = 1:length(Scales)
