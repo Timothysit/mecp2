@@ -47,6 +47,9 @@ for i = 1:length(spikeTimes)
      spikeStore(i, :) = data(spikePoint - round(duration/2):(spikePoint + round(duration/2))); 
      % spikeStore(i, :) = data(spikePoint - floor(duration/2):(spikePoint + floor(duration/2)));
 end
+
+% TODO: deal with corner case where last spike is at end of recording
+
 % aesthetics()
 
 averageSpike = mean(spikeStore);
