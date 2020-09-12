@@ -1,5 +1,7 @@
 import numpy as np 
 import scipy.signal as ssignal
+import pdb  # debugging
+
 
 def detect_spikes(spike_data, method='manuel', fs=25000, multiplier=5):
     """
@@ -68,3 +70,62 @@ def down_sample_spike_matrix(spike_matrix, down_sample_factor=2500):
     down_sampled_matrix = np.sum(reshaped_spike_matrix, axis=-1)
     
     return down_sampled_matrix
+
+
+def find_intersect_spikes(spike_struct, fs=25000, round_decimal_places=3):
+    """
+    Obtains the unique spike times from a structure containing the detected
+    spike using multiple methods, and outputs a matrix where each row
+    corresponds to a single unique spike time, and where each column
+    represents a spike detection method. An entry of 1 in the matrix
+    means that the spike detection method identified a spike at that time
+    and 0 otherwise.
+    Parameters
+    -------------
+    spike_struct : (dict)
+    fs : (int)
+        sampling rate (Hz)
+    round_decimal_places : (int)
+        number of decimal places in seconds to round
+        eg. 3 will mean rounding the spikes to the nearest 1 ms
+    """
+
+
+
+    wavelet_method_used = spike_struct.keys()
+    all_spike_times = list()
+
+    for wavlet_method, spike_idx in spike_struct.items():
+        spike_times = np.array(spike_idx) / fs
+        all_spike_times.append(spike_times)
+
+    # pdb.set_trace()
+    all_spike_times = np.concatenate(all_spike_times)
+
+    if round_decimal_places > 0:
+        all_spike_times = np.round(all_spike_times, round_decimal_places)
+
+    unique_spike_times = np.unique(all_spike_times)
+
+    intersection_matrix = np.zeros(shape=(len(unique_spike_times), len(wavelet_method_used)))
+
+    for wavelet_n, (wavelet_method, spike_idx) in enumerate(spike_struct.items()):
+        spike_times = np.array(spike_idx) / fs
+        if round_decimal_places > 0:
+            spike_times = np.round(spike_times, round_decimal_places)
+
+            for unique_spike_t_index, unique_spike_t in enumerate(unique_spike_times):
+
+                if unique_spike_t in spike_times:
+                    intersection_matrix[unique_spike_t_index, wavelet_n] = 1
+
+
+    return intersection_matrix, unique_spike_times
+
+
+def align_spikes():
+
+
+
+
+    return aligned_spike_matrix
