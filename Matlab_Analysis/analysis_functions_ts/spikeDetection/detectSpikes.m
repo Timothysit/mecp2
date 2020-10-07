@@ -193,6 +193,47 @@ if strcmp(method,'Manuel')
     end 
 end 
 
+
+%% Schroter method but use the median instead 
+if strcmp(method,'ManuelMedian')
+    % butterworth filter 
+    lowpass = 600; 
+    highpass = 8000; 
+    wn = [lowpass highpass] / (fs / 2); 
+    filterOrder = 3;
+    [b, a] = butter(filterOrder, wn); 
+    filteredData = filtfilt(b, a, double(data)); 
+
+    % finding threshold and spikes
+    m = median(filteredData); 
+    s = std(filteredData); 
+    % multiplier = 5;
+    threshold = m - multiplier*s; 
+    % negThreshold = m - 8 * s; % maximum threshold, a simple artefact removal method 
+    spikeTrain = filteredData < threshold; 
+    
+   
+    % impose refractory period
+    refPeriod = 2.0 * 10^-3 * fs; % 2ms 
+    % I think there is a more efficient/elegant way to do this, but I haven't 
+    % taken time to think about it yet 
+    spikeTrain = double(spikeTrain);
+    finalData = filteredData;
+    % refractory period
+    for i = 1:length(spikeTrain)
+       if spikeTrain(i) == 1 
+           refStart = i + 1; % start of refractory period 
+           refEnd = round(i + refPeriod); % end of refractory period
+           if refEnd > length(spikeTrain)
+               spikeTrain(refStart:length(spikeTrain)) = 0; 
+           else 
+               spikeTrain(refStart:refEnd) = 0; 
+           end 
+       end 
+    end 
+end 
+
+
 %%  Z. Nenadic and J.W. Burdick 2005 
 % , Spike detection using the 
 %   continuous wavelet transform, IEEE T. Bio-med. Eng., vol. 52,
