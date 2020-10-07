@@ -7,9 +7,13 @@ clear all; close all; clc;
 % save_folder = '/media/timsit/Seagate Expansion Drive/The_Mecp2_Project/organoid_data/spikes/customCWT_multiplier_3_L_-0p376/';
 
 % path = '/media/timsit/phts2/tempData/doSpikeDetection/';
-path = '/media/timsit/Seagate Expansion Drive/The_Mecp2_Project/organoid_data/mat/doSpikeDetection/';
+% path = '/media/timsit/Seagate Expansion Drive/The_Mecp2_Project/organoid_data/mat/doSpikeDetection/';
 % save_folder = '/media/timsit/phts2/tempData/spikes/customCWT_multiplier_3/';
-save_folder = '/media/timsit/phts2/tempData/spikes/CWT_param_search/all_duration/';
+% save_folder = '/media/timsit/phts2/tempData/spikes/CWT_param_search/all_duration/';
+
+% Windows machine 
+path = 'D:\The_Mecp2_Project\organoid_data\mat\doSpikeDetection';
+save_folder = 'D:\The_Mecp2_Project\organoid_data\spikes\thresholdParamSearch';
 
 thisPath = pwd;
 cd (path)
@@ -19,50 +23,81 @@ cd (thisPath)
 %% Fixed parameters
 
 params.multiplier = 3; % threshold multiplier for initial 
+params.refPeriod_ms = 2;  % refractory period (ms)
 params.grd = []; % which electordes are grounded / to ground in analysis
 params.save_filter_trace = 0;  % whether to save filtered raw data
 params.subsample_time = [];  % Start and end time (in seconds)
+
 % if empty, then go through the entire recording 
+
+%% Parameters for saving things 
+% Determine which variables to save
+vars_to_save = {'spikeDetectionResult', 'channels', 'grd'};
+            
+
 
 
 %% Find pre and post TTX pairs 
 % (threshold for post-TTX is dependent on pre-TTX condition)
 
-multiplier_to_search = linspace(3, 6, 10); 
+multiplier_to_search = [3, 3.5, 4, 4.5, 5, 5.5, 6];
+folder_name = files.folder;
+file_names = {files.name};
+pre_TTX_files = {file_names{1:2:end}};
+TTX_files = {file_names{2:2:end}};
+pre_post_TTX_files = [pre_TTX_files; TTX_files]';
 
-pre_TTX_files = 
-TTX_files = 
 
-for multiplier = multiplier_to_search
+for file_idx = 1:size(pre_post_TTX_files, 1)
 
-    params.multiplier = multiplier;
-    params.save_suffix = ['_' strrep(num2str(params.multiplier), '.', 'p')];
-    
-    for file_idx = 1:length(pre_TTX_files)
-
-        pre_TTX_file_path = pre_TTX_files(file_idx);
-        pre_TTX_data = load(pre_TTX_file_path);
-
-        params.TTX = 0;
-        params.threshold = [];
-
-        [pre_TTX_spike_detect_results, threshold_val] = ...
-            getSpikesThreshold(pre_TTX_data, params)
-
-        % Save Pre-TTX spike data
-
-        post_TTX_file_path = post_TTX_files(file_idx);
-        post_TTX_data = load(post_TTX_file_path);
-
-        params.TTX = 1;
-        params.threshold = threshold_val;
-
-        [post_TTX_spike_detect_results, threshold_val] = ...
-            getSpikesThreshold(pre_TTX_data, params);
+        % Load data first, then go through the thresholds
+        pre_TTX_file_name = pre_post_TTX_files(file_idx, 1);
+        pre_TTX_data = load([folder_name filesep pre_TTX_file_name{1}]);
         
-        % Save post-TTX spike data
+        post_TTX_file_name = pre_post_TTX_files(file_idx, 2);
+        post_TTX_data =  load([folder_name filesep post_TTX_file_name{1}]);
+        
+        for multiplier = multiplier_to_search
 
-    end 
+            params.multiplier = multiplier;
+            params.save_suffix = ['_' strrep(num2str(params.multiplier), '.', 'p')];
 
-end
+            params.TTX = 0;
+            params.threshold = [];
+        
+            % get meta-data and put them to 
+            pre_TTX_trace = pre_TTX_data.dat;
+            params.channels = pre_TTX_data.channels;
+            channels = pre_TTX_data.channels;   % just for saving
+            grd = params.grd;  % just for saving
+            params.fs = pre_TTX_data.fs;
+        
+            [spikeDetectionResult, threshold_val] = ...
+                getSpikesThreshold(pre_TTX_trace, params);
+
+            % Save Pre-TTX spike data
+            save(fullfile(save_folder, [pre_TTX_file_name{1}(1:end-4) params.save_suffix '_spikes.mat']), ... 
+            vars_to_save{:}, '-v7.3');
+        
+ 
+            % Do Post-TTX spike detection
+
+            params.TTX = 1;
+            params.threshold = threshold_val;
+            post_TTX_trace = post_TTX_data.dat;
+            params.channels = post_TTX_data.channels;
+            channels = post_TTX_data.channels;
+            params.fs = post_TTX_data.fs;
+
+            [spikeDetectionResult, threshold_val] = ...
+                getSpikesThreshold(post_TTX_trace, params);
+
+            % Save post-TTX spike data
+            save(fullfile(save_folder, [post_TTX_file_name{1}(1:end-4) params.save_suffix '_spikes.mat']), ... 
+            vars_to_save{:}, '-v7.3');
+        end 
+
+end 
+
+
 

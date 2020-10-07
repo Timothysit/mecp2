@@ -51,7 +51,7 @@ data = filteredData;
 
 %   Set thresholds
 % threshold = mad(filteredData, 1)/0.6745;
-threshold = median(abs(filteredData)) / 0.6745;  % timS: this seems faster.
+threshold = median(abs(filteredData - mean(filteredData))) / 0.6745;  % timS: this seems faster.
 minThreshold = -threshold*2;    % min spike peak voltage
 peakThreshold = -threshold*10;  % max spike peak voltage
 posThreshold = threshold*4.0;   % positive peak voltage
