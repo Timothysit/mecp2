@@ -110,41 +110,7 @@ if compare_pre_post_ttx
 end 
 
 %% Loop over all the files (without using the same threshold for pre-post TTX)
-% Here I label all files are not being TTX
+% Here I la
 
-if ~compare_pre_post_ttx
-    
-    folder_name = files.folder;
-    file_names = {files.name};
-    
-    for file_idx = 1:size(file_names, 1)
-
-            % Load data first, then go through the thresholds
-            file_name = file_names(file_idx, 1);
-            recording_data = load([folder_name filesep file_name]);
-
-            for multiplier = multiplier_to_search
-
-                params.multiplier = multiplier;
-                params.save_suffix = ['_' strrep(num2str(params.multiplier), '.', 'p')];
-
-                params.TTX = 0;
-                params.threshold = [];
-
-                % get meta-data and put them to 
-                trace = recording_data.dat;
-                params.channels = recording_data.channels;
-                channels = recording_data.channels;   % just for saving
-                grd = params.grd;  % just for saving
-                params.fs = recording_data.fs;
-
-                [spikeDetectionResult, threshold_val] = ...
-                    getSpikesThreshold(trace, params);
-
-                % Save spike data
-                save(fullfile(save_folder, [filename(1:end-4) params.save_suffix '_spikes.mat']), ... 
-                vars_to_save{:}, '-v7.3');
-    
-end 
 
 
