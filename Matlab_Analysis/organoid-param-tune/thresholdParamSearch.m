@@ -2,18 +2,13 @@
 
 clear all; close all; clc;
 
-
-% path = '/media/timsit/Seagate Expansion Drive/The_Mecp2_Project/organoid_data/mat/doSpikeDetection/';
-% save_folder = '/media/timsit/Seagate Expansion Drive/The_Mecp2_Project/organoid_data/spikes/customCWT_multiplier_3_L_-0p376/';
-
 % path = '/media/timsit/phts2/tempData/doSpikeDetection/';
-% path = '/media/timsit/Seagate Expansion Drive/The_Mecp2_Project/organoid_data/mat/doSpikeDetection/';
-% save_folder = '/media/timsit/phts2/tempData/spikes/customCWT_multiplier_3/';
-% save_folder = '/media/timsit/phts2/tempData/spikes/CWT_param_search/all_duration/';
+path = '/media/timsit/Seagate Expansion Drive/The_Mecp2_Project/organoid_data/mat/doSpikeDetection/';
+save_folder = '/media/timsit/Seagate Expansion Drive/The_Mecp2_Project/organoid_data/spikes/thresholdParamSearch/';
 
 % Windows machine 
-path = 'D:\The_Mecp2_Project\organoid_data\mat\doSpikeDetection';
-save_folder = 'D:\The_Mecp2_Project\organoid_data\spikes\thresholdParamSearch';
+% path = 'D:\The_Mecp2_Project\organoid_data\mat\doSpikeDetection';
+% save_folder = 'D:\The_Mecp2_Project\organoid_data\spikes\thresholdParamSearch';
 
 thisPath = pwd;
 cd (path)
