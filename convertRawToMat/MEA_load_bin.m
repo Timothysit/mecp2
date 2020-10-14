@@ -60,8 +60,8 @@ ADCz = str2num(m(ADCzerof+11:ADCzerof+16));
 fsf=findstr(m,'Sample rate');
 fs=str2num(m(fsf+14:fsf+18));
 
-uVf=findstr(m,'�V/AD');
-uV = str2num(m(uVf-7:uVf-1));
+uVf=findstr(m,'V/AD');
+uV = str2num(m(uVf-7:uVf-2));
 
 
 %% get channels from header
