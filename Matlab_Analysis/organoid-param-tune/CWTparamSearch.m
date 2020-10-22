@@ -7,7 +7,7 @@ clear all; close all; clc;
 % path = '/media/timsit/phts2/tempData/doSpikeDetection/';
 path = '/media/timsit/Seagate Expansion Drive/The_Mecp2_Project/organoid_data/mat/doSpikeDetection/';
 % save_folder = '/media/timsit/phts2/tempData/spikes/customCWT_multiplier_3/';
-save_folder = '/media/timsit/phts2/tempData/spikes/CWT_param_search/all_duration/';
+save_folder = '/media/timsit/Seagate Expansion Drive/The_Mecp2_Project/organoid_data/spikes/CWT_param_search/all_duration/';
 
 thisPath = pwd;
 cd (path)
@@ -23,10 +23,18 @@ params.Wid = [0.5, 1];
 % params.L = 0; % False Positive / True positive cost ratio
 params.Ns = 5; % number of scales to use
 params.n_spikes = 200; % number of spikes to make custom template
-params.multiplier = 3; % threshold multiplier for initial 
+params.multiplier = 3; % threshold multiplier for initial custom template?
 params.grd = []; % which electordes are grounded / to ground in analysis
 params.save_filter_trace = 0;  % whether to save filtered raw data
 params.subsample_time = [];  % Start and end time (in seconds)
+params.lower_spike_threshold = 0;
+
+
+% Some parameters to avoid noise / artifacts
+params.min_peak_threshold_multiplier = 2;  % 
+params.max_peak_threshold_multiplier = 10;
+params.max_positive_peak_threshold_multiplier = 4; 
+
 % if empty, then go through the entire recording 
 
 % to extract a subsample of the data (to speed up parameter search)
@@ -36,7 +44,7 @@ params.subsample_time = [];  % Start and end time (in seconds)
 %% Loop over desired parameters 
 
 % L_to_search = linspace(-0.188, 0.188, 10);
-L_to_search = [-0.15, -0.1, -0.05];
+L_to_search = [-0.15, -0.1, -0.05, 0];
 
 for file = 1:length(files)
 	for L_index = 1:length(L_to_search)
