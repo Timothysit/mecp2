@@ -50,6 +50,14 @@ if isfield(params, 'subsample_time')
     end 
 end 
 
+%% Other default parameters 
+
+if isfield(params, 'lower_spike_threshold')
+    lower_spike_threshold = params.lower_spike_threshold;
+else
+    lower_spike_threshold = 0;
+end 
+
 
 %% Detect spikes
 
