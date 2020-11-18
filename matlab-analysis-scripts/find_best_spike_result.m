@@ -1,10 +1,16 @@
 %% Define file to find best params 
 
 % File locations 
-raw_data_folder = '/media/timsit/Seagate Expansion Drive/The_Mecp2_Project/organoid_data/mat/';
-wavelet_spike_folder = '/media/timsit/Seagate Expansion Drive/The_Mecp2_Project/organoid_data/spikes/CWT_param_search/all_duration/';
-threshold_spike_folder = '/media/timsit/Seagate Expansion Drive/The_Mecp2_Project/organoid_data/spikes/thresholdParamSearch/';
-summary_plot_folder = '/media/timsit/Seagate Expansion Drive/The_Mecp2_Project/organoid_data/spikes/';
+% raw_data_folder = '/media/timsit/Seagate Expansion Drive/The_Mecp2_Project/organoid_data/mat/';
+% wavelet_spike_folder = '/media/timsit/Seagate Expansion Drive/The_Mecp2_Project/organoid_data/spikes/CWT_param_search/all_duration/';
+% threshold_spike_folder = '/media/timsit/Seagate Expansion Drive/The_Mecp2_Project/organoid_data/spikes/thresholdParamSearch/';
+% summary_plot_folder = '/media/timsit/Seagate Expansion Drive/The_Mecp2_Project/organoid_data/spikes/';
+
+addpath('/home/timsit/mecp2/Matlab_Analysis/analysis_functions_ts')
+raw_data_folder = '';
+wavelet_spike_folder = '/media/timsit/timsitHD-2020-03/mecp2/organoid_data/jeremi-detected-spikes/';
+threshold_spike_folder = '';
+summary_plot_folder = '/media/timsit/timsitHD-2020-03/mecp2/organoid_data/jeremi-detected-spikes-summary-plot/';
 
 % Params 
 max_tolerable_spikes_in_TTX = 100;
@@ -14,10 +20,24 @@ end_time = 600;
 sampling_rate = 1;
 threshold_ground_electrode_name = 15;
 min_spike_per_electrode_to_be_active = 5;
+wavelet_to_search = {'mea'};
+custom_backup_param_to_use = [];  % lost param to use in case there is no TTX file
+% if empty, then looks as the grounded electrode instead
 
 %% Loop through each file 
 
-recording_names = {dir([raw_data_folder '*.mat']).name};
+if isempty(raw_data_folder)
+    if ~isempty(wavelet_spike_folder)
+        fprintf('No raw data folder specified, getting recording names from wavelet spike results \n');
+        recording_names = {dir([wavelet_spike_folder '*.mat']).name};
+        for name_idx = 1:length(recording_names)
+            recording_names{name_idx} = extractBefore(recording_names{name_idx}, '_L');
+        end 
+        recording_names = unique(recording_names);
+    end    
+else
+    recording_names = {dir([raw_data_folder '*.mat']).name};
+end 
 recording_names_exclude_TTX = {};
 selected_detection_method = {};
 
@@ -37,7 +57,11 @@ f1 = figure();
 
 for r_name_idx = 1:length(recording_names_exclude_TTX)
     
-    [pathstr, recording_name, ext] = fileparts(recording_names_exclude_TTX{r_name_idx});
+    if contains(recording_names_exclude_TTX{r_name_idx}, '.mat')
+        [pathstr, recording_name, ext] = fileparts(recording_names_exclude_TTX{r_name_idx});
+    else
+        recording_name = recording_names_exclude_TTX{r_name_idx};
+    end 
     
     fprintf('Looking at recording: %s \n', recording_name)
     
@@ -49,20 +73,78 @@ for r_name_idx = 1:length(recording_names_exclude_TTX)
     for file_idx = 1:length(wavelet_spike_detection_results_names)
         file_name = wavelet_spike_detection_results_names{file_idx};
         param_file = load([wavelet_spike_folder file_name]);
-        wavelet_spike_matrix = spikeTimeToMatrix(param_file.spikeDetectionResult.spikeTimes, start_time, end_time, sampling_rate);
+        
+        % Old Version 
+        % wavelet_spike_matrix = spikeTimeToMatrix(param_file.spikeDetectionResult.spikeTimes, start_time, end_time, sampling_rate);
+        
+        % 2020-11-18 Jeremi output file version
+        wavelet_spike_matrix = spikeTimeToMatrix(param_file.spikeTimes, start_time, end_time, sampling_rate);
         total_spikes = sum(sum(wavelet_spike_matrix));
         L_param = param_file.spikeDetectionResult.params.L;
+        
+        % TODO: need to read this from the spike file (but that field is
+        % not ready yet)
+        grounded_electrode_names = [15];
+        grounded_electrode_idx = find(ismember(param_file.channels, grounded_electrode_names));
+        
+        % TODO: handle more than one grounded electrode (eg. ground them)
+        ground_electrode_spikes = length(param_file.spikeTimes{grounded_electrode_idx}.('mea'));
+        
         wavelet_spike_detection_info(file_idx, 1) = L_param;
         wavelet_spike_detection_info(file_idx, 2) = total_spikes;
         wavelet_spike_detection_info(file_idx, 3) = contains(file_name, 'TTX');
         wavelet_spike_detection_info(file_idx, 4) = file_idx;
+        wavelet_spike_detection_info(file_idx, 5) = ground_electrode_spikes;
          
     end 
     
     if sum(wavelet_spike_detection_info(:, 3)) == 0
-        fprintf('No TTX files found, using a pre-determined parameter file \n');
-        % TODO: decide on which file to use
-        wavelet_best_param_file_name = nan;
+        if ~isempty(custom_backup_param_to_use)
+            fprintf('No TTX files found, using a pre-determined parameter file \n');
+            % TODO: decide on which file to use
+            wavelet_best_param_file_name = nan;
+        else
+            fprintf('No TTX files found, finding best param file with spike count below threshold in grounded electrode \n')
+            ea_param_total_spikes = wavelet_spike_detection_info(:, 2);
+            ea_param_grounded_spikes = wavelet_spike_detection_info(:, 5);
+            ea_param_L_param = wavelet_spike_detection_info(:, 1);
+            regularisation_param = 10;
+            spike_count_to_grounded_ratio_reg = ...
+                (ea_param_total_spikes + regularisation_param) ./ ...
+                (ea_param_grounded_spikes + regularisation_param);
+            spike_count_to_grounded_ratio = ea_param_total_spikes ./ ea_param_grounded_spikes;
+            
+            % select best param as the one that maximises: spike_count_to_grounded_ratio_reg
+            [max_ratio_val, best_param_file_idx] = max(spike_count_to_grounded_ratio_reg);
+            
+            [ea_param_L_param_sorted, sort_idx] = sort(ea_param_L_param); 
+            spike_count_to_grounded_ratio_sorted = spike_count_to_grounded_ratio(sort_idx);
+            spike_count_to_grounded_ratio_reg_sorted = spike_count_to_grounded_ratio_reg(sort_idx);
+            
+            %{
+            figure
+            scatter(ea_param_L_param, spike_count_to_grounded_ratio, 'r')
+            hold on;
+            line_1 = plot(ea_param_L_param_sorted, spike_count_to_grounded_ratio_sorted, 'r');
+            hold on;
+            scatter(ea_param_L_param, spike_count_to_grounded_ratio_reg, 'b')
+            hold on;
+            line_2 = plot(ea_param_L_param_sorted, spike_count_to_grounded_ratio_reg_sorted, 'b');
+            legend([line_1, line_2], 'All spikes / grounded spikes', 'All spikes / grounded spikes regularised')
+            %}
+            wavelet_best_param_file_name = wavelet_spike_detection_results_names{best_param_file_idx};
+            
+            
+            % Get number of active electrodes from the best param file 
+            wavelet_best_param_file_data = load([wavelet_spike_folder wavelet_best_param_file_name]);
+            best_param_wavelet_spike_matrix = spikeTimeToMatrix( ...
+            wavelet_best_param_file_data.spikeTimes, start_time, end_time, sampling_rate);
+            
+            num_spike_per_electrode = sum(best_param_wavelet_spike_matrix, 1);
+            num_active_electrodes{r_name_idx} = length(find(num_spike_per_electrode >= min_spike_per_electrode_to_be_active));
+
+            
+        end 
     else
         TTX_used{r_name_idx} = 1;
         ttx_info_idx = find(wavelet_spike_detection_info(:, 3) == 1);
@@ -111,6 +193,7 @@ for r_name_idx = 1:length(recording_names_exclude_TTX)
             start_time, end_time, sampling_rate);
         total_spikes = sum(sum(threshold_spike_matrix));
         multiplier_param = threshold_param_file.spikeDetectionResult.params.multiplier;
+        
         ground_electrode_spikes = length( ...
         threshold_param_file.spikeDetectionResult.spikeTimes.( ... 
         strcat('channel', num2str(threshold_ground_electrode_name))));
