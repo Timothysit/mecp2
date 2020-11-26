@@ -1,0 +1,192 @@
+%% Sequentiality and correlation
+
+addpath('/home/timsit/mecp2/Matlab_Analysis/analysis_functions_ts');
+
+num_neurons = 60;
+num_time_bins = 100;
+shared_baseline = 1;
+
+neuron_activity_matrix = zeros(num_time_bins, num_neurons); 
+sub_pattern = [0.5, 1, 0.5];
+
+for nT = 1:2:num_time_bins
+    neuron_idx = mod(nT, num_neurons);
+    if neuron_idx == 0
+        neuron_idx = num_neurons;
+    end 
+    neuron_activity_matrix(nT, neuron_idx) = 1;
+end 
+
+
+% Just correlation per bin
+corr_mat = corr(neuron_activity_matrix);
+figure
+imagesc(corr_mat);
+xlabel('Neuron')
+ylabel('Neuron')
+title('Correlation matrix')
+set(gcf, 'color', 'white')
+
+% Binned correlation 
+fs = 1;
+spike_times_struct = struct();
+
+for n_channel = 1:num_neurons 
+    channel_vec = neuron_activity_matrix(:, n_channel);
+    spike_times_struct.(['channel_', num2str(n_channel)]) = find(channel_vec >= 1) / fs; 
+end 
+
+addpath('/home/timsit/mecp2/Matlab_Analysis/analysis_functions_ts')
+start_time = 0 / fs;
+end_time = num_time_bins / fs;
+resamp_fs = 0.2;
+spike_matrix = spikeTimeToMatrix(spike_times_struct, start_time, end_time, resamp_fs);
+
+figure; 
+imagesc(spike_matrix');
+xlabel('Time bin')
+ylabel('Neuron')
+set(gcf, 'color', 'white')
+title('Downsampled spike matrix')
+
+down_sampled_corr_mat = corr(spike_matrix);
+
+figure;
+imagesc(down_sampled_corr_mat)
+title('Correlation matrix after binning');
+xlabel('Neuron')
+ylabel('Neuron')
+set(gcf, 'color', 'white')
+
+
+% STTC 
+addpath('/home/timsit/mecp2/Matlab_Analysis/analysis_functions_ts/corrAnalysis')
+dtv = 5;
+Time = [0/fs, num_time_bins / fs];
+sttc_marix = zeros(num_neurons, num_neurons);
+for neuron_1 = 1:num_neurons
+    for neuron_2 = 1:num_neurons
+        spike_times_1 = spike_times_struct.(['channel_', num2str(neuron_1)]);
+        spike_times_2 = spike_times_struct.(['channel_', num2str(neuron_2)]);
+        N1v = length(spike_times_1);
+        N2v = length(spike_times_2);
+        tileCoef_n1_n2 = sttc(N1v, N2v, dtv, Time, spike_times_1, spike_times_2);
+        sttc_marix(neuron_1, neuron_2) = tileCoef_n1_n2;
+    end 
+end 
+
+figure;
+imagesc(sttc_marix);
+
+%% Look at circ shift correlation matrix 
+
+og_corr_matrix = corr(neuron_activity_matrix);
+og_corr_sum = sum(abs(og_corr_matrix(:)), 'omitnan');
+num_circ_shift = 500;
+circ_shift_corr = zeros(num_circ_shift, 1);
+for shift_idx = 1:num_circ_shift
+    circ_shifted_tn = circshiftmat(neuron_activity_matrix')'; % need to do tranpose because 
+    % circshiftmat shifs row, 
+    circ_shift_corr_mat = corr(circ_shifted_tn);
+    circ_shift_corr(shift_idx) = sum(abs(circ_shift_corr_mat(:)), 'omitnan');
+end 
+
+figure;
+histogram(circ_shift_corr)
+hold on;
+xline(og_corr_sum, '-r', 'LineWidth', 2)
+set(gcf, 'color', 'white')
+xlabel('Summed correlation')
+ylabel('Conuts')
+title('500 circular shifts')
+legend('Circ-shifted', 'Original', 'Location', 'bestoutside')
+legend boxoff
+
+%% Circ shift correlation matrix down-sampled 
+
+og_corr_matrix = corr(spike_matrix);
+og_corr_sum = sum(abs(og_corr_matrix(:)), 'omitnan');
+num_circ_shift = 500;
+circ_shift_corr = zeros(num_circ_shift, 1);
+for shift_idx = 1:num_circ_shift
+    circ_shifted_tn = circshiftmat(spike_matrix')'; % need to do tranpose because 
+    % circshiftmat shifs row, 
+    circ_shift_corr_mat = corr(circ_shifted_tn);
+    circ_shift_corr(shift_idx) = sum(abs(circ_shift_corr_mat(:)), 'omitnan');
+end 
+
+figure;
+histogram(circ_shift_corr)
+hold on;
+xline(og_corr_sum, '-r', 'LineWidth', 2)
+set(gcf, 'color', 'white')
+xlabel('Summed correlation')
+ylabel('Counts')
+title('500 circular shifts')
+legend('Circ-shifted', 'Original', 'Location', 'bestoutside')
+legend boxoff
+
+%% Circ shift STTC
+
+addpath('/home/timsit/mecp2/Matlab_Analysis/analysis_functions_ts/corrAnalysis')
+dtv = 1;
+Time = [0/fs, num_time_bins / fs];
+og_sttc_marix = zeros(num_neurons, num_neurons);
+for neuron_1 = 1:num_neurons
+    for neuron_2 = 1:num_neurons
+        spike_times_1 = spike_times_struct.(['channel_', num2str(neuron_1)]);
+        spike_times_2 = spike_times_struct.(['channel_', num2str(neuron_2)]);
+        N1v = length(spike_times_1);
+        N2v = length(spike_times_2);
+        tileCoef_n1_n2 = sttc(N1v, N2v, dtv, Time, spike_times_1, spike_times_2);
+        og_sttc_marix(neuron_1, neuron_2) = tileCoef_n1_n2;
+    end 
+end 
+
+og_sttc_marix_score = sum(abs(og_sttc_marix(:)), 'omitnan');
+
+circ_shift_sttc_score = zeros(num_circ_shift, 1);
+num_circ_shift = 100;
+fs = 1;
+for shift_idx = 1:num_circ_shift
+    
+    % shift activity matrix
+    circ_shifted_tn = circshiftmat(neuron_activity_matrix')'; 
+    
+    % reconstruct spike times from shifted activty matrix
+    shifted_spike_times_struct = struct();
+    for n_channel = 1:num_neurons 
+        channel_vec = circ_shifted_tn(:, n_channel);
+        shifted_spike_times_struct.(['channel_', num2str(n_channel)]) = find(channel_vec >= 1) / fs; 
+    end 
+    
+    % Calculate STTC
+   shifted_sttc_marix = zeros(num_neurons, num_neurons);
+    for neuron_1 = 1:num_neurons
+        for neuron_2 = 1:num_neurons
+            spike_times_1 = shifted_spike_times_struct.(['channel_', num2str(neuron_1)]);
+            spike_times_2 = shifted_spike_times_struct.(['channel_', num2str(neuron_2)]);
+            N1v = length(spike_times_1);
+            N2v = length(spike_times_2);
+            tileCoef_n1_n2 = sttc(N1v, N2v, dtv, Time, spike_times_1, spike_times_2);
+            shifted_sttc_marix(neuron_1, neuron_2) = tileCoef_n1_n2;
+        end 
+    end 
+    
+    circ_shift_sttc_score(shift_idx) = sum(abs(shifted_sttc_marix(:)), 'omitnan');
+    
+end 
+
+figure;
+histogram(circ_shift_sttc_score)
+hold on;
+xline(og_sttc_marix_score, '-r', 'LineWidth', 2)
+set(gcf, 'color', 'white')
+xlabel('Summed correlation')
+ylabel('Counts')
+title('100 circular shifts')
+legend('Circ-shifted', 'Original', 'Location', 'bestoutside')
+legend boxoff
+
+
+%% How about same anlaysis using Poisson?
