@@ -8,19 +8,30 @@
 
 addpath('/home/timsit/mecp2/Matlab_Analysis/analysis_functions_ts')
 raw_data_folder = '';
-wavelet_spike_folder = '/media/timsit/timsitHD-2020-03/mecp2/organoid_data/jeremi-detected-spikes/';
+% wavelet_spike_folder = '/media/timsit/timsitHD-2020-03/mecp2/organoid_data/jeremi-detected-spikes/';
+wavelet_spike_folder = '/media/timsit/timsitHD-2020-03/mecp2/organoid_data/jeremi-detected-spikes-dec-2020/mecp2/';
 threshold_spike_folder = '';
-summary_plot_folder = '/media/timsit/timsitHD-2020-03/mecp2/organoid_data/jeremi-detected-spikes-summary-plot/';
+summary_plot_folder = '/media/timsit/timsitHD-2020-03/mecp2/organoid_data/jeremi-detected-spikes-summary-plot/dec-2020-mecp2/';
 
 % Params 
-max_tolerable_spikes_in_TTX = 100;
-max_tolerable_spikes_in_grounded = 100;
+% max_tolerable_spikes_in_TTX : (float)
+% if duration is not specified, then this is absolute number (meaning 100/ 600 sec), otherwise 
+% it is the spike/s
+
+max_tolerable_spikes_in_TTX_abs = 100; 
+max_tolerable_spikes_in_grounded_abs = 100;
+
+max_tolerable_spikes_in_TTX_per_s = 1; 
+max_tolerable_spikes_in_grounded_per_s = 1;
+
 start_time = 0;
-end_time = 600;
+% end_time = 600;
+default_end_time = 600;  % end time to use if none is found in the param file
 sampling_rate = 1;
 threshold_ground_electrode_name = 15;
 min_spike_per_electrode_to_be_active = 5;
 wavelet_to_search = {'mea'};
+spike_time_unit = 'frame'; % Whether spike times are in terms of frames ('frame') or seconds ('sec')
 custom_backup_param_to_use = [];  % lost param to use in case there is no TTX file
 % if empty, then looks as the grounded electrode instead
 regularisation_param = 10;
@@ -69,17 +80,41 @@ for r_name_idx = 1:length(recording_names_exclude_TTX)
     % Loop through wavelet spike folder 
     wavelet_spike_detection_results_names = {dir([wavelet_spike_folder, strcat(recording_name, '*')]).name};
     
-    wavelet_spike_detection_info = zeros(length(wavelet_spike_detection_results_names), 3);
+    wavelet_spike_detection_info = zeros(length(wavelet_spike_detection_results_names), 7);
     
     for file_idx = 1:length(wavelet_spike_detection_results_names)
         file_name = wavelet_spike_detection_results_names{file_idx};
         param_file = load([wavelet_spike_folder file_name]);
         
+        if isfield(param_file.spikeDetectionResult.params, 'duration')
+            end_time = param_file.spikeDetectionResult.params.duration;
+            duration_provided = 1;
+            max_tolerable_spikes_in_TTX = max_tolerable_spikes_in_TTX_per_s;
+            max_tolerable_spikes_in_grounded = max_tolerable_spikes_in_grounded_per_s;
+            fprintf("Recording duration provided: using min spike in TTX in terms of spike/s \n")
+        else
+            max_tolerable_spikes_in_TTX = max_tolerable_spikes_in_TTX_abs; 
+            max_tolerable_spikes_in_grounded = max_tolerable_spikes_in_grounded_abs;
+            end_time = default_end_time;
+            duration_provided = 0;
+        end 
+        
         % Old Version 
         % wavelet_spike_matrix = spikeTimeToMatrix(param_file.spikeDetectionResult.spikeTimes, start_time, end_time, sampling_rate);
         
         % 2020-11-18 Jeremi output file version
-        wavelet_spike_matrix = spikeTimeToMatrix(param_file.spikeTimes, start_time, end_time, sampling_rate);
+        if strcmp(spike_time_unit, 'sec')
+            wavelet_spike_matrix = spikeTimeToMatrix(param_file.spikeTimes, ... 
+                start_time, end_time, sampling_rate);
+        elseif strcmp(spike_time_unit, 'frame')
+            if isfield(param_file.spikeDetectionResult.params, 'fs')
+                recording_fs = param_file.spikeDetectionResult.params.fs;
+            elseif isfield(param_file.spikeDetectionResult, 'fs')
+                recording_fs = param_file.spikeDetectionResult.fs;
+            end 
+            wavelet_spike_matrix = spikeTimeToMatrix(param_file.spikeTimes, ...
+                start_time, end_time, sampling_rate, recording_fs);
+        end 
         total_spikes = sum(sum(wavelet_spike_matrix));
         L_param = param_file.spikeDetectionResult.params.L;
         
@@ -96,6 +131,10 @@ for r_name_idx = 1:length(recording_names_exclude_TTX)
         wavelet_spike_detection_info(file_idx, 3) = contains(file_name, 'TTX');
         wavelet_spike_detection_info(file_idx, 4) = file_idx;
         wavelet_spike_detection_info(file_idx, 5) = ground_electrode_spikes;
+        
+        % Total spikes / s
+        wavelet_spike_detection_info(file_idx, 6) = total_spikes / end_time;
+        wavelet_spike_detection_info(file_idx, 7) = ground_electrode_spikes / end_time;
          
     end 
     
@@ -126,7 +165,7 @@ for r_name_idx = 1:length(recording_names_exclude_TTX)
             
             
             
-            subplot(2, 2, 1)
+            subplot(2, 3, 1)
             scatter(ea_param_L_param, ea_param_grounded_spikes, 'black')
             hold on
             line_grounded = plot(ea_param_L_param_sorted, ea_param_grounded_spikes_sorted, 'black');
@@ -139,7 +178,7 @@ for r_name_idx = 1:length(recording_names_exclude_TTX)
             ylabel('Spike counts')
             
 
-            subplot(2, 2, 2)
+            subplot(2, 3, 2)
             scatter(ea_param_L_param, spike_count_to_grounded_ratio, 'r')
             hold on;
             line_1 = plot(ea_param_L_param_sorted, spike_count_to_grounded_ratio_sorted, 'r');
@@ -159,9 +198,20 @@ for r_name_idx = 1:length(recording_names_exclude_TTX)
             
             % Get number of active electrodes from the best param file 
             wavelet_best_param_file_data = load([wavelet_spike_folder wavelet_best_param_file_name]);
-            best_param_wavelet_spike_matrix = spikeTimeToMatrix( ...
-            wavelet_best_param_file_data.spikeTimes, start_time, end_time, sampling_rate);
             
+            if strcmp(spike_time_unit, 'sec')
+                best_param_wavelet_spike_matrix = spikeTimeToMatrix( ...
+                wavelet_best_param_file_data.spikeTimes, start_time, end_time, sampling_rate);
+            elseif strcmp(spike_time_unit, 'frame')
+                if isfield(param_file.spikeDetectionResult.params, 'fs')
+                    recording_fs = param_file.spikeDetectionResult.params.fs;
+                elseif isfield(param_file.spikeDetectionResult, 'fs')
+                    recording_fs = param_file.spikeDetectionResult.fs;
+                end 
+                best_param_wavelet_spike_matrix = spikeTimeToMatrix( ...
+                wavelet_best_param_file_data.spikeTimes, start_time, end_time, ...
+                sampling_rate, recording_fs);
+            end 
             num_spike_per_electrode = sum(best_param_wavelet_spike_matrix, 1);
             num_active_electrodes{r_name_idx} = length(find(num_spike_per_electrode >= min_spike_per_electrode_to_be_active));
 
@@ -178,14 +228,79 @@ for r_name_idx = 1:length(recording_names_exclude_TTX)
             xlabel('Time(seconds)')
             ylabel('Spikes')
             
+            % Look at simultaneous spikes 
+            all_spike_times = [];
+            for channel_idx = 1:length(wavelet_best_param_file_data.spikeTimes)
+                channel_spike_times = wavelet_best_param_file_data.spikeTimes{channel_idx}.mea;
+                all_spike_times = [all_spike_times, channel_spike_times];
+            end 
+            
+            % Temp Code 
+            %{
+            all_spike_times = [];
+            for channel_idx = 1:length(spikeTimes)
+                channel_spike_times = spikeTimes{channel_idx}.mea;
+                all_spike_times = [all_spike_times, channel_spike_times];
+            end 
+            %}
+
+            [unique_spike_counts, unique_spike_time] = groupcounts(all_spike_times');
+            [num_bin_w_spike_count, spike_count] = groupcounts(unique_spike_counts);
+            
+            
+            subplot(2, 3, 3)
+            histogram(unique_spike_counts)
+            ylabel('Number of time bins')
+            xlabel('Number of spikes in time bin')
+            reg_term = 0;
+            simultaneous_spike_count_ratio = ... 
+                (length(find(unique_spike_counts > 1)) + reg_term) / ...
+                (length(unique_spike_counts) + reg_term) * 100;
+            title_text = sprintf('Simultaneous spikes ratio: %.1f%%', simultaneous_spike_count_ratio);
+            title(title_text)
+            
+            subplot(2, 2, 4);
+            
+            % Look at peaks of simultaneous and non-simultaneous spikes 
+            all_peaks = [];
+            for channel_idx = 1:length(wavelet_best_param_file_data.spikeTimes)
+                channel_spike_waveforms = wavelet_best_param_file_data.spikeWaveforms{channel_idx}.mea;
+                channel_wave_peaks = min(channel_spike_waveforms,  [], 1);
+                all_peaks = [all_peaks channel_wave_peaks];
+            end 
+            
+            % Group peaks to simultaneous vs. non-simultaneous spikes
+            individual_spike_times = unique_spike_time(find(unique_spike_counts == 1));
+            sim_spike_times = unique_spike_time(find(unique_spike_counts > 1));
+            [~, individual_spike_time_idx] = ismember(individual_spike_times, all_spike_times);
+            individual_spike_peaks = all_peaks(individual_spike_time_idx);
+            
+            sim_spike_time_idx = [];
+            for sim_spk_idx = 1:length(sim_spike_times)
+                sim_spike_time_idx = [sim_spike_time_idx, ... 
+                    find(all_spike_times == sim_spike_times(sim_spk_idx))];
+            end 
+            sim_spike_peaks = all_peaks(sim_spike_time_idx);
+            histogram(individual_spike_peaks)
+            hold on 
+            histogram(sim_spike_peaks)
+            legend('Individual spikes', 'Simultaneous spikes')
+            xlabel('Spike min peak')
+            ylabel('Spike count')
+            
             % Save results
             f = gcf;
             if ~isempty(summary_plot_folder)
+                if ~exist(summary_plot_folder, 'dir')
+                    fprintf('Warning: summary plot folder specified does not exist, will attempt to create it')
+                    mkdir(summary_plot_folder)
+                end 
+                
                 fig_save_name = recording_name;
                 % print([summary_plot_folder fig_save_name], '-bestfit','-dpng')
                 f1.PaperUnits = 'inches';
                 f1.PaperPosition = [0 0 8 6]; 
-                 print([summary_plot_folder fig_save_name], '-dpng', '-r0')
+                print([summary_plot_folder fig_save_name], '-dpng', '-r300')
             end 
             clf(f1)
             
@@ -195,8 +310,14 @@ for r_name_idx = 1:length(recording_names_exclude_TTX)
         TTX_used{r_name_idx} = 1;
         ttx_info_idx = find(wavelet_spike_detection_info(:, 3) == 1);
         ttx_info = wavelet_spike_detection_info(ttx_info_idx, :);
-        ttx_info_spike_okay_idx = find(ttx_info(:, 2) < max_tolerable_spikes_in_TTX);
-        ttx_info_spike_okay_param = ttx_info(ttx_info_spike_okay_idx, 1);
+        
+        if duration_provided == 0
+            ttx_info_spike_okay_idx = find(ttx_info(:, 2) < max_tolerable_spikes_in_TTX);
+            ttx_info_spike_okay_param = ttx_info(ttx_info_spike_okay_idx, 1);
+        elseif duration_provided == 1
+            ttx_info_spike_okay_idx = find(ttx_info(:, 6) < max_tolerable_spikes_in_TTX);
+            ttx_info_spike_okay_param = ttx_info(ttx_info_spike_okay_idx, 1);
+        end 
             
         if isempty(ttx_info_spike_okay_param)
             fprintf('None of the wavelet parameters has false positive rate below threshold \n')
@@ -218,6 +339,12 @@ for r_name_idx = 1:length(recording_names_exclude_TTX)
                     wavelet_spike_detection_info(:, 3) == 0);
              okay_param_info = wavelet_spike_detection_info(okay_param_info_idx, :);
              best_param_idx = find(okay_param_info(:, 2) == max(okay_param_info(:, 2)));
+   
+             if length(best_param_idx) > 1
+                 fprintf('Warning: multiple best parm found for this file, using this first one, TODO: flag file\n')
+                 best_param_idx = best_param_idx(1);
+             end 
+             
              best_param = okay_param_info(best_param_idx, 1);
              best_param_file_idx = find(wavelet_spike_detection_info(:, 1) == best_param & ... 
              wavelet_spike_detection_info(:, 3) == 0);
@@ -229,7 +356,7 @@ for r_name_idx = 1:length(recording_names_exclude_TTX)
     
     % Loop through threshold spike folder 
     threshold_spike_detection_results_names= {dir([threshold_spike_folder, strcat(recording_name, '*')]).name};
-    threshold_spike_detection_info = zeros(length(threshold_spike_detection_results_names), 5);
+    threshold_spike_detection_info = zeros(length(threshold_spike_detection_results_names), 7);
     
     for file_idx = 1:length(threshold_spike_detection_results_names)
         threshold_file_name = threshold_spike_detection_results_names{file_idx};
@@ -249,13 +376,23 @@ for r_name_idx = 1:length(recording_names_exclude_TTX)
         threshold_spike_detection_info(file_idx, 3) = contains(threshold_file_name, 'TTX');
         threshold_spike_detection_info(file_idx, 4) = file_idx;
         threshold_spike_detection_info(file_idx, 5) = ground_electrode_spikes;
-         
+        
+        % Total spikes / s
+        threshold_spike_detection_info(file_idx, 6) = total_spikes / end_time;
+        threshold_spike_detection_info(file_idx, 7) = ground_electrode_spikes / end_time;
     end 
     
     % Subset to parameters where grounded electrode have fewer than
     % maximum allowable spikes 
-    subset_threshold_spike_detection_info_idx = find( ...
-        threshold_spike_detection_info(:, 5) < max_tolerable_spikes_in_grounded);
+    if duration_provided == 0
+        subset_threshold_spike_detection_info_idx = find( ...
+            threshold_spike_detection_info(:, 5) < max_tolerable_spikes_in_grounded);
+    elseif duration_provided == 1
+        % Using spike/s instead 
+        subset_threshold_spike_detection_info_idx = find( ...
+            threshold_spike_detection_info(:, 7) < max_tolerable_spikes_in_grounded);
+    end 
+    
     subset_threshold_spike_detection_info = threshold_spike_detection_info(... 
         subset_threshold_spike_detection_info_idx, :);
     
@@ -386,3 +523,4 @@ T = table(method, TTX_used, best_param_file, num_active_electrodes, 'RowNames', 
 uitable('Data',T{:,:},'ColumnName',T.Properties.VariableNames,...
     'RowName',T.Properties.RowNames,'Units', 'Normalized', 'Position',[0, 0, 1, 1]);
 
+writetable(T, [summary_plot_folder 'summary_table.csv']);
