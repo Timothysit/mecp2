@@ -1,4 +1,5 @@
-function [intersection_matrix, unique_spike_times] = findGroupIntersectSpikes(spike_struct, fs, round_decimal_places)
+function [intersection_matrix, unique_spike_times] = ... 
+    findGroupIntersectSpikes(spike_struct, fs, round_decimal_places, fileformat)
 %FINDGROUPINTERSECTSPIKES Find matching spikes from multiple methods.
 % Obtains the unique spike times from a structure containing the detected
 % spike using multiple methods, and outputs a matrix where each row 
@@ -7,16 +8,35 @@ function [intersection_matrix, unique_spike_times] = findGroupIntersectSpikes(sp
 % means that the spike detection method identified a spike at that time 
 % and 0 otherwise. 
 
+if ~exist('fileformat', 'var')
+    fileformat = '2020-december';
+end 
 
-wavelet_method_used = fieldnames(spike_struct);
+
+spike_detection_method = fieldnames(spike_struct);
 
 all_spike_times = [];
 
-for method_number = 1:numel(wavelet_method_used)
+if strcmp(fileformat, '2020-december')
+    
+    for method_number = 1:numel(spike_detection_method)
 
-    spike_times = spike_struct.(wavelet_method_used{method_number}) / fs;
-    all_spike_times = [all_spike_times, spike_times];
-end
+        spike_times = spike_struct.(spike_detection_method{method_number}) / fs;
+        all_spike_times = [all_spike_times, spike_times];
+    
+    end
+    
+else
+    
+    for method_number = 1:numel(spike_detection_method)
+        spike_times = spike_struct.(spike_detection_method{method_number}) / fs;
+        all_spike_times = [all_spike_times, spike_times];
+    end
+    
+    
+end 
+
+
 
 % TODO: ideally be able to round to nearest arbitrary value
 % eg. currently this is rounding to nearest 0.01 ms, but ideally also 
@@ -26,18 +46,16 @@ if round_decimal_places > 0
     all_spike_times = round(all_spike_times, round_decimal_places);
 end 
 
-
 unique_spike_times = unique(all_spike_times);
 %  unique_spike_times = all_spike_times;
 
 
-
 intersection_matrix = zeros(length(unique_spike_times), ...
-    length(wavelet_method_used));
+    length(spike_detection_method));
 
-for method_number = 1:numel(wavelet_method_used)
+for method_number = 1:numel(spike_detection_method)
 
-    spike_times = spike_struct.(wavelet_method_used{method_number}) / fs;
+    spike_times = spike_struct.(spike_detection_method{method_number}) / fs;
     
     if round_decimal_places > 0
         spike_times = round(spike_times, round_decimal_places);
