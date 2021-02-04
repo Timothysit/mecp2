@@ -1,5 +1,5 @@
 function spikeTimes = mergeSpikeDetectionTimes(spikeTimes, spikeWaveforms, fs, ... 
-    round_decimal_places, diag_plot_path)
+    round_decimal_places, spike_time_unit, diag_plot_path)
 %{
 
 Arguments 
@@ -21,7 +21,9 @@ Arguments
         number of decimal places to round the spike times by, which
         provides a quick hack to bin spikes by a small time window.
         eg. 3 corresponds to binning spikes in 1 ms bins 
-      
+    spike_time_unit : (str)
+        units of spike times, this can passed directly to 
+        findGroupIntersectSpkes
     diag_plot_path : (str) (optional)
        
 %}
@@ -48,7 +50,7 @@ for electrode_idx = 1:num_electrode
 
 
     [intersection_matrix, unique_spike_times] = ... 
-        findGroupIntersectSpikes(spike_struct, fs, round_decimal_places);
+        findGroupIntersectSpikes(spike_struct, fs, round_decimal_places, spike_time_unit);
 
     % Check at most 1 spike per time bin
     if max(max(intersection_matrix)) > 1

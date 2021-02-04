@@ -1,5 +1,5 @@
 function [intersection_matrix, unique_spike_times] = ... 
-    findGroupIntersectSpikes(spike_struct, fs, round_decimal_places, fileformat)
+    findGroupIntersectSpikes(spike_struct, fs, round_decimal_places, spike_time_unit, fileformat)
 %FINDGROUPINTERSECTSPIKES Find matching spikes from multiple methods.
 % Obtains the unique spike times from a structure containing the detected
 % spike using multiple methods, and outputs a matrix where each row 
@@ -12,12 +12,25 @@ if ~exist('fileformat', 'var')
     fileformat = '2020-december';
 end 
 
+if ~exist('spike_time_unit', 'var')
+    spike_time_unit = 's';
+end 
+
 
 spike_detection_method = fieldnames(spike_struct);
 
 all_spike_times = [];
 
-if strcmp(fileformat, '2020-december')
+if strcmp(spike_time_unit, 's')
+    
+    for method_number = 1:numel(spike_detection_method)
+
+        spike_times = spike_struct.(spike_detection_method{method_number}); 
+        all_spike_times = [all_spike_times, spike_times];
+    
+    end
+
+elseif strcmp(fileformat, '2020-december')
     
     for method_number = 1:numel(spike_detection_method)
 
@@ -29,7 +42,7 @@ if strcmp(fileformat, '2020-december')
 else
     
     for method_number = 1:numel(spike_detection_method)
-        spike_times = spike_struct.(spike_detection_method{method_number}) / fs;
+        spike_times = spike_struct.(spike_detection_method{method_number});
         all_spike_times = [all_spike_times, spike_times];
     end
     
@@ -54,9 +67,12 @@ intersection_matrix = zeros(length(unique_spike_times), ...
     length(spike_detection_method));
 
 for method_number = 1:numel(spike_detection_method)
-
-    spike_times = spike_struct.(spike_detection_method{method_number}) / fs;
     
+    if strcmp(spike_time_unit, 's')
+        spike_times = spike_struct.(spike_detection_method{method_number});
+    elseif strcmp(spike_time_unit, 'frames')
+        spike_times = spike_struct.(spike_detection_method{method_number}) / fs;
+    end 
     if round_decimal_places > 0
         spike_times = round(spike_times, round_decimal_places);
     end 
