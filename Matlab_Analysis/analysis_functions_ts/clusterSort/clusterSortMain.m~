@@ -1,0 +1,69 @@
+%% Clustering time series, then sort by the cluster 
+% Just for visualisation purpose (proper quantitative clustering 
+% requires cross validation on the data, etc.)
+addpath('/home/timsit/mecp2/Matlab_Analysis/organoid-param-tune')
+%% Load data 
+load('/media/timsit/timsitHD-2020-03/mecp2/organoid_data/jeremi-detected-spikes-dec-2020/test-merge-spikes/190703_slice1_recording1_L_-0.18803_spikes.mat')
+
+
+%% Get raster 
+% sampling_rate = spikeDetectionResult.params.fs; 
+sampling_rate = 1;
+start_time = 0;
+end_time = spikeDetectionResult.params.duration;
+spike_detection_method = 'thr3p0';
+spikeMatrix = spikeTimeToMatrix2(spikeTimes, ...
+start_time, end_time, spike_detection_method, sampling_rate);
+
+
+%% Compute some form of a ditance matrix 
+
+% Correlation 
+distMatrix = corr(spikeMatrix);
+% Dynamic time warping (TODO)
+
+figure;
+imagesc(distMatrix)
+
+
+%% Do heriarchical clustering on distance matrix 
+figure
+Z = linkage(distMatrix);
+[H, T, outperm] = dendrogram(Z, 0);
+
+figure;
+subplot(1, 2, 1)
+imagesc(distMatrix)
+disMatrixSorted = distMatrix(outperm, outperm);
+subplot(1, 2, 2)
+imagesc(disMatrixSorted)
+
+%% Plot original and sorted spike matrix 
+figure
+subplot(1, 2, 1)
+imagesc(spikeMatrix')
+title('Original order')
+
+subplot(1, 2, 2)
+imagesc(spikeMatrix(:, outperm)')
+title('Sorted order')
+
+%% Test case 
+time_bins = linspace(0, 10, 1000);
+latent_1 = sin(time_bins);
+latent_2 = 3 + time_bins * 1;
+
+figure;
+plot(latent_1) 
+plot(latent_2)
+
+num_nodes = 60;
+sim_spike_matrix = normrnd(0, 3, num_nodes, length(time_bins));
+
+latent_1_nodes = randsample(1:num_node, );
+
+%% Dynamic time warping
+x = spikeMatrix(1, :);
+y = spikeMatrix(2, :);
+dist = dtw(x,y);
+
